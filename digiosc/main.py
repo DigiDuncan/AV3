@@ -1,6 +1,5 @@
 import random
 
-from digiosc.av3 import AV3Base
 from digiosc.av3.av3 import AV3
 from digiosc.lib.logging import setup_logging
 from digiosc.lib.types import UNFETCHED, OSCReturnable, Seconds

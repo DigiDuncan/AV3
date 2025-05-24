@@ -1,4 +1,9 @@
 # https://gist.github.com/devxpy/063968e0a2ef9b6db0bd6af8079dad2a
+from __future__ import annotations
+
+from collections.abc import Callable
+from typing import Any, Generator, Literal, TypedDict, Union
+import mido
 
 INSTRUMENTS = [
     'Acoustic Grand Piano',
@@ -170,3 +175,70 @@ def note_to_number(note: str, octave: int) -> int:
     if not (0 <= note <= 127):
         raise ValueError(errors['notes'])
     return note
+
+class MIDIPort:
+    PORT_OPEN = False
+
+    # It's a singleton!
+    def __new__(cls, *args):
+        if not hasattr(cls, 'instance'):
+            cls.instance = super(MIDIPort, cls).__new__(cls)
+        return cls.instance
+
+    def __init__(self):
+        if not self.PORT_OPEN:
+            try:
+                self.port: mido.ports.IOPort = mido.open_ioport()
+                self.PORT_OPEN = True
+            except OSError:
+                return
+
+    def __iter__(self):
+        return self.port.__iter__()
+
+    @property
+    def iter_pending(self) -> Callable[[], Generator[MIDIMessage, Any, None]]:
+        return self.port.iter_pending
+
+    @property
+    def receive(self):
+        return self.port.receive
+
+    def close(self):
+        self.port.close()
+
+Channel = int
+Control = int
+Note = int
+Program = int
+
+class NoteMessage(TypedDict):
+    type: Literal['note_on', 'note_off']
+    time: Literal[0]
+    note: Note
+    velocity: int
+    channel: Channel
+
+
+class ControlMessage(TypedDict):
+    type: Literal['control_change']
+    time: Literal[0]
+    control: Control
+    value: int
+    channel: Channel
+
+
+class ProgramMessage(TypedDict):
+    type: Literal['program_change']
+    time: Literal[0]
+    program: Program
+    channel: Channel
+
+
+class PitchWheelMessage(TypedDict):
+    type: Literal['pitchwheel']
+    time: Literal[0]
+    channel: Channel
+    pitch: int
+
+MIDIMessage = Union[NoteMessage, ControlMessage, PitchWheelMessage, ProgramMessage]
