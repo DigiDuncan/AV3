@@ -1,6 +1,7 @@
 import random
 
-from digiosc.av3 import AV3
+from digiosc.av3 import AV3Base
+from digiosc.av3.av3 import AV3
 from digiosc.lib.logging import setup_logging
 from digiosc.lib.types import UNFETCHED, OSCReturnable, Seconds
 
@@ -40,7 +41,7 @@ class DigiAV3(AV3):
     def __init__(self, ip = "127.0.0.1", port = 9000, listen_port = 9001):
         super().__init__(ip, port, listen_port, default_id = 'avtr_ab4e71a3-36b1-4470-a0c8-a9c007352a15', default_height = 1.11,
                          accurate_scale_polling = False, assume_base_state = True,
-                         parameter_prefix_blacklist = ("Go/", "VF"),
+                         parameter_prefix_blacklist = ("Go/", "VF", "CheeseSync"),
                          verbose = False)
 
         self.last_shown_height: Seconds = -1
@@ -170,6 +171,26 @@ class DigiAV3(AV3):
             if self.last_break + self.MAX_SPEED < self.clock:
                 self._set_digits(random.randrange(0, 999))
                 self.last_break = self.clock
+
+    def on_key_press(self, key: str):
+        if key == "d":
+            self.set_bool("Charm/Left", True)
+        elif key == "f":
+            self.set_bool("Charm/Down", True)
+        elif key == "j":
+            self.set_bool("Charm/Up", True)
+        elif key == "k":
+            self.set_bool("Charm/Right", True)
+
+    def on_key_release(self, key: str):
+        if key == "d":
+            self.set_bool("Charm/Left", False)
+        elif key == "f":
+            self.set_bool("Charm/Down", False)
+        elif key == "j":
+            self.set_bool("Charm/Up", False)
+        elif key == "k":
+            self.set_bool("Charm/Right", False)
 
 def main():
     setup_logging("digiosc")
