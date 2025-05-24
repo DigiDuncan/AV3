@@ -1,7 +1,11 @@
 import time
+from typing import Literal
 from digiosc.av3.base import AV3Base
 import keyboard
+import mouse
 
+MouseButton = Literal['left', 'middle', 'right', 'x', 'x2']
+MouseEventType = Literal['down', 'up', 'double']
 
 class AV3(AV3Base):
     """Represents an avatar you can send parameter controls to with OSC, and recieve data from and about.
@@ -18,6 +22,7 @@ class AV3(AV3Base):
                  verbose = False):
         
         keyboard.hook(self._keyboard_hook)
+        mouse.hook(self._mouse_hook)
 
         super().__init__(ip, port, listen_port,
                          default_id = default_id,
@@ -35,12 +40,42 @@ class AV3(AV3Base):
             self._on_key_press(event.name)
         elif event.event_type == keyboard.KEY_UP:
             self._on_key_release(event.name)
+
+    def _mouse_hook(self, event: mouse.ButtonEvent | mouse.MoveEvent | mouse.WheelEvent):
+        match type(event):
+            case mouse.ButtonEvent:
+                match event.event_type:
+                    case mouse.DOWN:
+                        self._on_mouse_press(event.button)
+                    case mouse.UP:
+                        self._on_mouse_release(event.button)
+                    case mouse.DOUBLE:
+                        self._on_mouse_double_click(event.button)
+            case mouse.MoveEvent:
+                self._on_mouse_move(event.x, event.y)
+            case mouse.WheelEvent:
+                self._on_mouse_scroll(event.delta)
             
     def _on_key_press(self, key: str):
         self.on_key_press(key)
     
     def _on_key_release(self, key: str):
         self.on_key_release(key)
+
+    def _on_mouse_press(self, button: MouseButton):
+        self.on_mouse_press(self, button)
+
+    def _on_mouse_release(self, button: MouseButton):
+        self.on_mouse_release(self, button)
+    
+    def _on_mouse_double_click(self, button: MouseButton):
+        self.on_mouse_double_click(self, button)
+
+    def _on_mouse_move(self, x: int, y: int):
+        self.on_mouse_move(x, y)
+
+    def _on_mouse_scroll(self, delta: float):
+        self.on_mouse_scroll(delta)
 
     def start(self):
         super().start()
@@ -56,4 +91,24 @@ class AV3(AV3Base):
 
     def on_key_release(self, key: str):
         """Fires when a key on the keyboard is released."""
+        ...
+
+    def on_mouse_press(self, button: MouseButton):
+        """Fires when a mouse button is pressed."""
+        ...
+
+    def on_mouse_release(self, button: MouseButton):
+        """Fires when a mouse button is released."""
+        ...
+    
+    def on_mouse_double_click(self, button: MouseButton):
+        """Fires when a mouse button is double-clicked."""
+        ...
+
+    def on_mouse_move(self, x: int, y: int):
+        """Fires when the mouse is moved."""
+        ...
+
+    def on_mouse_scroll(self, delta: float):
+        """Fires when the mouse's scroll wheel is moved."""
         ...
