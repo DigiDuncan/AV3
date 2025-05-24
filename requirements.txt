@@ -1,0 +1,3 @@
+python-osc==1.9.3
+digiformatter==0.5.7.2
+arrow==1.3.0
