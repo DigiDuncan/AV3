@@ -1,8 +1,12 @@
 from enum import IntEnum
+from pathlib import Path
 from typing import Literal, TypedDict, get_type_hints
+
+from appdirs import user_data_dir
 
 from digiosc.lib.types import UNFETCHED
 
+LOG_DIRECTORY = Path(user_data_dir("VRChat", "VRChat")).parent.parent.parent / "LocalLow" / "VRChat" / "VRChat"
 
 class Gesture(IntEnum):
     NEUTRAL = 0

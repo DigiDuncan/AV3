@@ -1,5 +1,7 @@
 # Required for VRChat control
 python-osc==1.9.3
+# For finding the VRChat log files
+appdirs==1.4.4
 # Logging
 digiformatter==0.5.7.2
 # Keyboard support

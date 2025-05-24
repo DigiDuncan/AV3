@@ -119,6 +119,8 @@ class AV3(AV3Base):
                 if contents != self._file_contents.get(p, ""):
                     self._on_file_changed(p, contents)
                     self._file_contents[p] = contents
+
+    ### PRIVATE VERSIONS OF EVENTS
             
     def _on_key_press(self, key: str):
         self.on_key_press(key)
@@ -178,11 +180,15 @@ class AV3(AV3Base):
         self._handle_files()
         self.on_update()
 
+    ### PUBLIC FUNCTIONS
+
     def add_file_handler(self, path: Path):
+        """Add the path of a file to be listened to for changes."""
         if path not in self._file_handlers:
             self._file_handlers.append(path)
 
     def remove_file_handler(self, path: Path):
+        """Remove a file path from the list of listened-to files."""
         if path in self._file_handlers:
             self._file_handlers.remove(path)
 
