@@ -3,11 +3,14 @@ from typing import Literal
 from digiosc.av3.base import AV3Base
 import keyboard
 import mouse
+import XInput
 
 from digiosc.lib.midi import Channel, MIDIPort, Note, Program
+from digiosc.lib.xinput import BUTTON_NAMES, Button
 
 MouseButton = Literal['left', 'middle', 'right', 'x', 'x2']
 MouseEventType = Literal['down', 'up', 'double']
+LeftOrRight = Literal['left', 'right']
 
 class AV3(AV3Base):
     """Represents an avatar you can send parameter controls to with OSC, and recieve data from and about.
@@ -78,6 +81,31 @@ class AV3(AV3Base):
                     self._on_midi_control_change(msg['program'], msg['channel'])
                 case 'pitchwheel':
                     self._on_midi_pitchweel(msg['pitch'], msg['channel'])
+    
+    def _handle_controller(self):
+        events = XInput.get_events()
+        for e in events:
+            controller_id = e.user_index
+            match e.type:
+                case XInput.EVENT_CONNECTED:
+                    self.logger.info(f"Controller ID {e.user_index} connected!")
+                case XInput.EVENT_DISCONNECTED:
+                    self.logger.error(f"Controller ID {e.user_index} disconnected!")
+                case XInput.EVENT_BUTTON_PRESSED:
+                    button = BUTTON_NAMES[e.button_id]
+                    self._on_button_press(button, controller_id)
+                case XInput.EVENT_BUTTON_RELEASED:
+                    button = BUTTON_NAMES[e.button_id]
+                    self._on_button_release(button, controller_id)
+                case XInput.EVENT_STICK_MOVED:
+                    stick = "right" if e.stick == XInput.RIGHT else "left"
+                    x = e.x
+                    y = e.y
+                    self._on_stick_move(stick, x, y, controller_id)
+                case XInput.EVENT_TRIGGER_MOVED:
+                    trigger = "right" if e.trigger == XInput.RIGHT else "left"
+                    val = e.value
+                    self._on_trigger(trigger, val, controller_id)
             
     def _on_key_press(self, key: str):
         self.on_key_press(key)
@@ -115,12 +143,25 @@ class AV3(AV3Base):
     def _on_midi_pitchweel(self, pitch: int, channel: Channel):
         self.on_midi_control_change(pitch, channel)
 
+    def _on_button_press(self, button: Button, controller_id: int):
+        self.on_button_press(button, controller_id)
+
+    def _on_button_release(self, button: Button, controller_id: int):
+        self.on_button_release(button, controller_id)
+
+    def _on_stick_move(self, stick: LeftOrRight, x: int, y: int, controller_id: int):
+        self.on_stick_move(stick, x, y, controller_id)
+
+    def _on_trigger(self, trigger: LeftOrRight, value: int, controller_id: int):
+        self.on_trigger(trigger, value, controller_id)
+
     def start(self):
         super().start()
 
     def _on_update(self):
         self._last_tick = time.time()
         self._handle_midi()
+        self._handle_controller()
         self.on_update()
 
     ### EVENTS
@@ -170,4 +211,20 @@ class AV3(AV3Base):
 
     def _on_midi_pitchweel(self, pitch: int, channel: Channel):
         """Fired when a MIDI pitchwheel is bent."""
+        ...
+
+    def on_button_press(self, button: Button, controller_id: int):
+        """Fired when a controller button is pressed."""
+        ...
+
+    def on_button_release(self, button: Button, controller_id: int):
+        """Fired when a controller button is released."""
+        ...
+
+    def on_stick_move(self, stick: LeftOrRight, x: int, y: int, controller_id: int):
+        """Fired when a controller stick is moved."""
+        ...
+
+    def on_trigger(self, trigger: LeftOrRight, value: int, controller_id: int):
+        """Fired when a controller trigger is pressed."""
         ...

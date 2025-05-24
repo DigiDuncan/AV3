@@ -8,3 +8,5 @@ keyboard==0.13.5
 mido[ports-rtmidi]==1.3.3
 # Mouse support
 mouse==0.7.1
+# XInput support
+XInput-Python==0.4.0
