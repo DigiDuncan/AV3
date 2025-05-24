@@ -1,1 +1,30 @@
-# digiosc2
+# AV3
+
+## Events API
+```
+on_start
+on_update
+on_avatar_change
+on_height_change
+on_parameter_change
+on_velocity_change
+on_viseme_change
+on_unknown_message
+on_key_press
+on_key_release
+on_mouse_press
+on_mouse_release
+on_mouse_double_click
+on_mouse_move
+on_mouse_scroll
+on_midi_on
+on_midi_off
+on_midi_program_change
+on_midi_control_change
+on_midi_pitchweel
+on_button_press
+on_button_release
+on_stick_move
+on_trigger
+on_file_changed
+```

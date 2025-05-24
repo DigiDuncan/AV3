@@ -1,3 +1,4 @@
+from pathlib import Path
 import time
 from typing import Literal
 from digiosc.av3.base import AV3Base
@@ -29,7 +30,9 @@ class AV3(AV3Base):
         keyboard.hook(self._keyboard_hook)
         mouse.hook(self._mouse_hook)
         self._midi_port = MIDIPort()
-        self._warned = False
+        self._warned_about_midi = False
+        self._file_handlers: list[Path] = []
+        self._file_contents: dict[Path, str] = {}
 
         super().__init__(ip, port, listen_port,
                          default_id = default_id,
@@ -65,9 +68,9 @@ class AV3(AV3Base):
 
     def _handle_midi(self):
         if not self._midi_port.PORT_OPEN:
-            if not self._warned:
+            if not self._warned_about_midi:
                 self.logger.error("No open MIDI ports! (MIDI functionality will not work!)")
-                self._warned = True
+                self._warned_about_midi = True
             return
         for msg in self._midi_port.iter_pending():
             match msg['type']:
@@ -106,6 +109,16 @@ class AV3(AV3Base):
                     trigger = "right" if e.trigger == XInput.RIGHT else "left"
                     val = e.value
                     self._on_trigger(trigger, val, controller_id)
+
+    def _handle_files(self):
+        for p in self._file_handlers:
+            if p not in self._file_contents:
+                self._file_contents[p] = ""
+            with open(p, encoding = "utf-8") as f:
+                contents = f.read().strip()
+                if contents != self._file_contents.get(p, ""):
+                    self._on_file_changed(p, contents)
+                    self._file_contents[p] = contents
             
     def _on_key_press(self, key: str):
         self.on_key_press(key)
@@ -155,14 +168,26 @@ class AV3(AV3Base):
     def _on_trigger(self, trigger: LeftOrRight, value: int, controller_id: int):
         self.on_trigger(trigger, value, controller_id)
 
-    def start(self):
-        super().start()
+    def _on_file_changed(self, path: Path, contents: str):
+        self.on_file_changed(path, contents)
 
     def _on_update(self):
         self._last_tick = time.time()
         self._handle_midi()
         self._handle_controller()
+        self._handle_files()
         self.on_update()
+
+    def add_file_handler(self, path: Path):
+        if path not in self._file_handlers:
+            self._file_handlers.append(path)
+
+    def remove_file_handler(self, path: Path):
+        if path in self._file_handlers:
+            self._file_handlers.remove(path)
+
+    def start(self):
+        super().start()
 
     ### EVENTS
     def on_key_press(self, key: str):
@@ -193,23 +218,23 @@ class AV3(AV3Base):
         """Fires when the mouse's scroll wheel is moved."""
         ...
 
-    def _on_midi_on(self, note: Note, velocity: int, channel: Channel):
+    def on_midi_on(self, note: Note, velocity: int, channel: Channel):
         """Fires when a MIDI note is played."""
         ...
     
-    def _on_midi_off(self, note: Note, channel: Channel):
+    def on_midi_off(self, note: Note, channel: Channel):
         """Fired when a MIDI note is no longer playing."""
         ...
 
-    def _on_midi_program_change(self, program: Program, channel: Channel):
+    def on_midi_program_change(self, program: Program, channel: Channel):
         """Fired when a MIDI program changes."""
         ...
 
-    def _on_midi_control_change(self, control: Program, channel: Channel):
+    def on_midi_control_change(self, control: Program, channel: Channel):
         """Fired when a MIDI control changes."""
         ...
 
-    def _on_midi_pitchweel(self, pitch: int, channel: Channel):
+    def on_midi_pitchweel(self, pitch: int, channel: Channel):
         """Fired when a MIDI pitchwheel is bent."""
         ...
 
@@ -227,4 +252,10 @@ class AV3(AV3Base):
 
     def on_trigger(self, trigger: LeftOrRight, value: int, controller_id: int):
         """Fired when a controller trigger is pressed."""
+        ...
+    
+    def on_file_changed(self, path: Path, contents: str):
+        """Fired when the contents of a file change.
+        Requires the file path be added via `add_file_handler(path: Path)`.
+        """
         ...
