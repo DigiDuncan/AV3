@@ -2,6 +2,7 @@ import logging
 import time
 from typing import Iterable
 
+from colored import style
 from pythonosc.dispatcher import Dispatcher
 from pythonosc.osc_server import BlockingOSCUDPServer
 
@@ -66,6 +67,7 @@ class AV3Base():
 
         self.parameters: AvatarParameters = create_default_parameters_dict()
         self.custom_parameters: dict[str, OSCReturnable] = {}
+        self._just_set: list[str] = []
         if custom_parameters:
             self.custom_parameters.update(custom_parameters)
         self.assume_base_state = assume_base_state
@@ -125,6 +127,7 @@ class AV3Base():
         else:
             self.custom_parameters[parameter] = value
             self._on_parameter_change(parameter, value, True, True)
+        self._just_set.append(parameter)
 
     def set_int(self, parameter: str, value: int):
         """
@@ -218,8 +221,9 @@ class AV3Base():
                     self._on_viseme_change(Viseme(self.parameters["Viseme"]))
             else:
                 self.custom_parameters[endpoint] = arg
-                self.logger.info(f"{self.ip}:{self.listen_port} -> CUSTOM {endpoint}: {arg}")
-            self._on_parameter_change(endpoint, arg, endpoint in self.DEFAULT_PARAMETER_NAMES)
+            self.logger.info(f"{style.DIM if endpoint in self._just_set else ''}{self.ip}:{self.listen_port} -> CUSTOM {endpoint}: {arg}")
+            self._on_parameter_change(endpoint, arg, endpoint in self.DEFAULT_PARAMETER_NAMES, endpoint in self._just_set)
+            self._just_set.remove(endpoint)
         elif address == "/avatar/change":
             self.logger.info(f"{self.ip}:{self.listen_port} -> AVATAR CHANGE: {args[0]}")
             self._on_avatar_change(args[0], args[0] in self.forms)
@@ -268,7 +272,7 @@ class AV3Base():
             self._set_defaults()
         self.on_start()
         self._server.service_actions = self._on_update
-        self._server.serve_forever()
+        self._server.serve_forever(self.MAX_SPEED)
 
     # EVENTS
     def on_avatar_change(self, id: str, is_form: bool) -> None:

@@ -26,7 +26,7 @@ class AV3(AV3Base):
                  parameter_prefix_blacklist = None,
                  round_floats_to = 3, 
                  verbose = False):
-        
+
         keyboard.hook(self._keyboard_hook)
         mouse.hook(self._mouse_hook)
         self._midi_port = MIDIPort()
