@@ -27,4 +27,5 @@ on_button_release
 on_stick_move
 on_trigger
 on_file_changed
+on_url_changed
 ```
