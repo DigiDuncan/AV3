@@ -1,17 +1,39 @@
+from collections.abc import Callable
+from dataclasses import dataclass
+import json
 from pathlib import Path
 import time
-from typing import Literal
-from digiosc.av3.base import AV3Base
+from typing import Any, Literal, Optional
 import keyboard
 import mouse
+import requests
 import XInput
 
+from digiosc.av3.base import AV3Base
 from digiosc.lib.midi import Channel, MIDIPort, Note, Program
+from digiosc.lib.types import URL, Seconds
 from digiosc.lib.xinput import BUTTON_NAMES, Button
 
 MouseButton = Literal['left', 'middle', 'right', 'x', 'x2']
 MouseEventType = Literal['down', 'up', 'double']
 LeftOrRight = Literal['left', 'right']
+StringProcessor = Callable[[str], Any]
+DictProcessor = Callable[[dict], Any]
+
+@dataclass
+class FileHandler:
+    path: Path
+    poll_time: Seconds
+    return_json: bool = False
+    processor: Optional[StringProcessor | DictProcessor] = None
+
+@dataclass
+class URLHandler:
+    url: URL
+    poll_time: Seconds
+    return_json: bool = False
+    processor: Optional[StringProcessor | DictProcessor] = None
+
 
 class AV3(AV3Base):
     """Represents an avatar you can send parameter controls to with OSC, and recieve data from and about.
@@ -31,8 +53,14 @@ class AV3(AV3Base):
         mouse.hook(self._mouse_hook)
         self._midi_port = MIDIPort()
         self._warned_about_midi = False
-        self._file_handlers: list[Path] = []
-        self._file_contents: dict[Path, str] = {}
+
+        self._file_handlers: dict[Path, FileHandler] = {}
+        self._file_contents: dict[Path, Any] = {}
+        self._last_polled_files: dict[Path, Seconds] = {}
+
+        self._url_handlers: dict[str, URLHandler] = {}
+        self._url_contents: dict[str, Any] = {}
+        self._last_polled_urls: dict[str, Seconds] = {}
 
         super().__init__(ip, port, listen_port,
                          default_id = default_id,
@@ -111,14 +139,51 @@ class AV3(AV3Base):
                     self._on_trigger(trigger, val, controller_id)
 
     def _handle_files(self):
-        for p in self._file_handlers:
-            if p not in self._file_contents:
-                self._file_contents[p] = ""
-            with open(p, encoding = "utf-8") as f:
-                contents = f.read().strip()
-                if contents != self._file_contents.get(p, ""):
-                    self._on_file_changed(p, contents)
-                    self._file_contents[p] = contents
+        for fh in self._file_handlers:
+            path = fh.path
+            _last_polled = self._last_polled_files
+            if path in _last_polled and _last_polled[path] + fh.poll_time > self.clock:
+                continue
+
+            with open(fh.path, "r", encoding = "utf-8") as f:
+                if fh.return_json:
+                    contents = json.load(f)
+                else:
+                    contents = f.read().strip()
+            if fh.processor:
+                contents = fh.processor(contents)
+            _file_contents = self._file_contents
+            if fh.path in _file_contents and _file_contents[path] == contents:
+                return
+            _file_contents[path] = contents
+            _last_polled[path] = self.clock
+            self._on_file_changed(path, contents)
+
+    def _handle_urls(self):
+        for uh in self._url_handlers:
+            url = uh.url
+            _last_polled = self._last_polled_urls
+            if url in _last_polled and _last_polled[url] + uh.poll_time > self.clock:
+                continue
+
+            r = requests.get(url)
+            if r.status_code != 200:
+                self.logger.error(f"{url} raised status code {r.status_code}!")
+                continue
+
+            if uh.return_json:
+                contents = r.json()
+            else:
+                contents = r.text
+
+            if uh.processor:
+                contents = uh.processor(contents)
+            _url_contents = self._url_contents
+            if uh.path in _url_contents and _url_contents[url] == contents:
+                return
+            _url_contents[url] = contents
+            _last_polled[url] = self.clock
+            self._on_url_changed(url, contents)
 
     ### PRIVATE VERSIONS OF EVENTS
             
@@ -170,27 +235,53 @@ class AV3(AV3Base):
     def _on_trigger(self, trigger: LeftOrRight, value: int, controller_id: int):
         self.on_trigger(trigger, value, controller_id)
 
-    def _on_file_changed(self, path: Path, contents: str):
+    def _on_file_changed(self, path: Path, contents: Any):
         self.on_file_changed(path, contents)
+
+    def _on_url_changed(self, url: URL, contents: Any):
+        self.on_url_changed(url, contents)
 
     def _on_update(self):
         self._last_tick = time.time()
         self._handle_midi()
         self._handle_controller()
         self._handle_files()
+        self._handle_urls()
         self.on_update()
 
     ### PUBLIC FUNCTIONS
 
-    def add_file_handler(self, path: Path):
-        """Add the path of a file to be listened to for changes."""
+    def add_file_handler(self, path: Path, poll_time: Seconds, return_json: bool = False, processor: StringProcessor | DictProcessor = None):
+        """Add the path of a file to be listened to for changes.
+        `poll_time: Seconds`: how often to poll this file
+        `return_json: bool`: whether or not to return the file as a JSON before processing
+        `processor: function`: a function that takes in a string or a dict and returns some data which will then be the
+            data provided in the event
+        """
+        fh = FileHandler(path, poll_time, return_json, processor)
         if path not in self._file_handlers:
-            self._file_handlers.append(path)
+            self._file_handlers[path] = fh
 
     def remove_file_handler(self, path: Path):
         """Remove a file path from the list of listened-to files."""
         if path in self._file_handlers:
-            self._file_handlers.remove(path)
+            self._file_handlers.pop(path)
+
+    def add_url_handler(self, url: URL, poll_time: Seconds, return_json: bool = False, processor: StringProcessor | DictProcessor = None):
+        """Add a URL to be listened to for changes.
+        `poll_time: Seconds`: how often to poll this URL
+        `return_json: bool`: whether or not to return the URL contents as a JSON before processing
+        `processor: function`: a function that takes in a string or a dict and returns some data which will then be the
+            data provided in the event
+        """
+        uh = URLHandler(url, poll_time, return_json, processor)
+        if url not in self._url_handlers:
+            self._url_handlers[url] = uh
+
+    def remove_url_handler(self, url: URL):
+        """Remove a URL from the list of listened-to URLs."""
+        if url in self._url_handlers:
+            self._url_handlers.pop(url)
 
     def start(self):
         super().start()
@@ -260,8 +351,14 @@ class AV3(AV3Base):
         """Fired when a controller trigger is pressed."""
         ...
     
-    def on_file_changed(self, path: Path, contents: str):
+    def on_file_changed(self, path: Path, contents: Any):
         """Fired when the contents of a file change.
-        Requires the file path be added via `add_file_handler(path: Path)`.
+        Requires the file path be added via `add_file_handler()`.
+        """
+        ...
+
+    def on_url_changed(self, url: URL, contents: Any):
+        """Fired when the contents of a URL endpoint change.
+        Requires the URL be added via `add_url_handler()`.
         """
         ...
