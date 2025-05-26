@@ -139,7 +139,7 @@ class AV3(AV3Base):
                     self._on_trigger(trigger, val, controller_id)
 
     def _handle_files(self):
-        for fh in self._file_handlers:
+        for fh in self._file_handlers.values():
             path = fh.path
             _last_polled = self._last_polled_files
             if path in _last_polled and _last_polled[path] + fh.poll_time > self.clock:
@@ -160,7 +160,7 @@ class AV3(AV3Base):
             self._on_file_changed(path, contents)
 
     def _handle_urls(self):
-        for uh in self._url_handlers:
+        for uh in self._url_handlers.values():
             url = uh.url
             _last_polled = self._last_polled_urls
             if url in _last_polled and _last_polled[url] + uh.poll_time > self.clock:
@@ -179,7 +179,7 @@ class AV3(AV3Base):
             if uh.processor:
                 contents = uh.processor(contents)
             _url_contents = self._url_contents
-            if uh.path in _url_contents and _url_contents[url] == contents:
+            if uh.url in _url_contents and _url_contents[url] == contents:
                 return
             _url_contents[url] = contents
             _last_polled[url] = self.clock
@@ -267,7 +267,7 @@ class AV3(AV3Base):
         if path in self._file_handlers:
             self._file_handlers.pop(path)
 
-    def add_url_handler(self, url: URL, poll_time: Seconds, return_json: bool = False, processor: StringProcessor | DictProcessor = None):
+    def add_url_handler(self, url: URL, poll_time: Seconds = 60.0, return_json: bool = False, processor: StringProcessor | DictProcessor = None):
         """Add a URL to be listened to for changes.
         `poll_time: Seconds`: how often to poll this URL
         `return_json: bool`: whether or not to return the URL contents as a JSON before processing
