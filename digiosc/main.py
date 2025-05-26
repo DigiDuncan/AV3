@@ -1,3 +1,4 @@
+from enum import IntEnum, auto
 import random
 
 from digiosc.av3.av3 import AV3
@@ -12,24 +13,38 @@ CENTIMETERS = 1
 METERS = 2
 KILOMETERS = 3
 
-SCALE_1 = 0
-SCALE_10 = 1
-SCALE_20 = 2
-SCALE_100 = 3
-SCALE_1000 = 4
-SCALE_1_10 = 5
-SCALE_1_20 = 6
-SCALE_1_100 = 7
+class Scale(IntEnum):
+    SCALE_1 = 0
+    SCALE_5 = 1
+    SCALE_10 = 2
+    SCALE_20 = 3
+    SCALE_50 = 4
+    SCALE_100 = 5
+    SCALE_1000 = 6
+    SCALE_1_5 = 7
+    SCALE_1_10 = 8
+    SCALE_1_20 = 9
+    SCALE_1_50 = 10
+    SCALE_1_100 = 11
+    SCALE_1_1000 = 12
+    SCALE_1_2000 = 13
+
 
 SCALES = {
-    SCALE_1: 1,
-    SCALE_10: 10,
-    SCALE_20: 20,
-    SCALE_100: 100,
-    SCALE_1000: 1000,
-    SCALE_1_10: 1/10,
-    SCALE_1_20: 1/20,
-    SCALE_1_100: 1/100
+    Scale.SCALE_1: 1,
+    Scale.SCALE_5: 5,
+    Scale.SCALE_10: 10,
+    Scale.SCALE_20: 20,
+    Scale.SCALE_50: 50,
+    Scale.SCALE_100: 100,
+    Scale.SCALE_1000: 1000,
+    Scale.SCALE_1_5: 1 / 5,
+    Scale.SCALE_1_10: 1 / 10,
+    Scale.SCALE_1_20: 1 / 20,
+    Scale.SCALE_1_50: 1 / 50,
+    Scale.SCALE_1_100: 1 / 100,
+    Scale.SCALE_1_1000: 1 / 1000,
+    Scale.SCALE_1_2000: 1 / 2000,
 }
 
 def digit(i: int, digit: int) -> int:
@@ -59,7 +74,7 @@ class DigiAV3(AV3):
         self.set_bool("Height/DotB", False)
         self.set_bool("Height/DotC", False)
         self.set_int("Height/Unit", CENTIMETERS)
-        self.set_int("Height/Scale", SCALE_1)
+        self.set_int("Height/Scale", Scale.SCALE_1)
         self.set_bool("Height/Show", False)
 
     def _set_digits(self, value: float, decimal = 0):

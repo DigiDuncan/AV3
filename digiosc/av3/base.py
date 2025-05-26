@@ -207,7 +207,7 @@ class AV3Base():
                         return
             if endpoint in self.DEFAULT_PARAMETER_NAMES:
                 self.parameters[endpoint] = arg
-                if endpoint not in self.VERBOSE_PARAMETER_NAMES or self.verbose:
+                if (endpoint not in self.VERBOSE_PARAMETER_NAMES) or self.verbose:
                     self.logger.info(f"{self.ip}:{self.listen_port} -> {endpoint}: {arg}")
                 if endpoint in self.SCALE_PARAMETER_NAMES and self.base_height is None:
                     # Handle base height fetching
@@ -221,9 +221,11 @@ class AV3Base():
                     self._on_viseme_change(Viseme(self.parameters["Viseme"]))
             else:
                 self.custom_parameters[endpoint] = arg
-            self.logger.info(f"{style.DIM if endpoint in self._just_set else ''}{self.ip}:{self.listen_port} -> CUSTOM {endpoint}: {arg}")
+            if (not endpoint.endswith(('_Angle', "_Stretch", "_Squish"))) or self.verbose:
+                self.logger.info(f"{style.DIM if endpoint in self._just_set else ''}{self.ip}:{self.listen_port} -> CUSTOM {endpoint}: {arg}")
             self._on_parameter_change(endpoint, arg, endpoint in self.DEFAULT_PARAMETER_NAMES, endpoint in self._just_set)
-            self._just_set.remove(endpoint)
+            if endpoint in self._just_set:
+                self._just_set.remove(endpoint)
         elif address == "/avatar/change":
             self.logger.info(f"{self.ip}:{self.listen_port} -> AVATAR CHANGE: {args[0]}")
             self._on_avatar_change(args[0], args[0] in self.forms)
