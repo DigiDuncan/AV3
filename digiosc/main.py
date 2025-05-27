@@ -5,6 +5,17 @@ from digiosc.av3.av3 import AV3
 from digiosc.lib.logging import setup_logging
 from digiosc.lib.types import UNFETCHED, OSCReturnable, Seconds
 
+###
+# !: THIS IS IMPORTANT
+# THIS IS CODE I AM LITERALLY RUNNING TO TEST THIS LIBRARY
+# IT IS NOT A "REFERENCE IMPLEMENTATION"
+# IT IS NOT GOOD CODE IN SOME WAYS
+# THIS WON'T BE HERE WHEN THE LIBRARY RELEASES
+# YOU CAN LOOK AT IT,
+# YOU CAN SMELL IT,
+# BUT DON'T EXPECT IT TO WORK FOR YOUR USE CASE
+###
+
 DASH = 10
 OFF = 11
 
