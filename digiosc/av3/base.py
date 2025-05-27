@@ -13,7 +13,6 @@ from digiosc.osc.client import OSCClient
 
 
 class AV3Base():
-    """Represents an avatar you can send parameter controls to with OSC, and recieve data from and about."""
     MAX_SIZE = 256
     BOOL_SIZE = 1
     INT_SIZE = 8
@@ -43,6 +42,8 @@ class AV3Base():
                  round_floats_to: int | None = 3,
                  verbose: bool = False):
         """
+        Represents an avatar you can send parameter controls to with OSC, and recieve data from and about.
+
         `ip`: The IP to listen/send on.
         `port`: The sending port.
         `listen_port`: The listening port.
@@ -60,6 +61,18 @@ class AV3Base():
         `round_floats_to` (optional): A decimal amount to round incoming floats to. Defaults to 3, can be None.
         `verbose`: whether to log spammy parameters, like Viseme or Velocity. `on_parameter_change` will still
             capture these events.
+
+        Available events:
+        ```
+        on_start
+        on_update
+        on_avatar_change
+        on_height_change
+        on_parameter_change
+        on_velocity_change
+        on_viseme_change
+        on_unknown_message
+        ```
         """
         self.ip = ip
         self.port = port

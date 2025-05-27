@@ -36,10 +36,6 @@ class URLHandler:
 
 
 class AV3(AV3Base):
-    """Represents an avatar you can send parameter controls to with OSC, and recieve data from and about.
-    
-    Has additional functions for interfacing with various input devices.
-    """
     def __init__(self, ip = "127.0.0.1", port = 9000, listen_port = 9001, *,
                  default_id = None, default_height = None, forms = None,
                  custom_parameters = None,
@@ -48,7 +44,58 @@ class AV3(AV3Base):
                  parameter_prefix_blacklist = None,
                  round_floats_to = 3, 
                  verbose = False):
+        """
+        Represents an avatar you can send parameter controls to with OSC, and recieve data from and about.
+        
+        Has additional functions for interfacing with various input devices.
+        `ip`: The IP to listen/send on.
+        `port`: The sending port.
+        `listen_port`: The listening port.
+        `default_id` (optional): The ID of the avatar you intend to start in.
+        `default_height` (optional): The height of the default avatar (and all its forms.)
+        `forms` (optional): A list of avatar IDs considered to be the same "form" as this one. In theory,
+            these should all share a height and list of parameters.
+        `custom_parameters` (optional): a dictionary of custom parameters on this avatar and their default state.
+            Parameters not in this dictionary will be populated as their updated.
+        `assume_base_state` (optional): sets some assumed base parameters in an attempt to deal with the fact that
+            VRChat only sends changes to state.
+        `accurate_scale_polling` (optional): whether to fire `on_height_change` for all scale-based events (true),
+            or only on `ScaleFactor` (false).
+        `parameter_prefix_blacklist` (optional): A list of parameter prefixes to ignore when encountered.
+        `round_floats_to` (optional): A decimal amount to round incoming floats to. Defaults to 3, can be None.
+        `verbose`: whether to log spammy parameters, like Viseme or Velocity. `on_parameter_change` will still
+            capture these events.
 
+        Available events:
+        ```
+        on_start
+        on_update
+        on_avatar_change
+        on_height_change
+        on_parameter_change
+        on_velocity_change
+        on_viseme_change
+        on_unknown_message
+        on_key_press
+        on_key_release
+        on_mouse_press
+        on_mouse_release
+        on_mouse_double_click
+        on_mouse_move
+        on_mouse_scroll
+        on_midi_on
+        on_midi_off
+        on_midi_program_change
+        on_midi_control_change
+        on_midi_pitchweel
+        on_button_press
+        on_button_release
+        on_stick_move
+        on_trigger
+        on_file_changed
+        on_url_changed
+        ```
+        """
         keyboard.hook(self._keyboard_hook)
         mouse.hook(self._mouse_hook)
         self._midi_port = MIDIPort()

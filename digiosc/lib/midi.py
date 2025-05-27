@@ -170,11 +170,11 @@ def number_to_note(number: int) -> tuple:
 def note_to_number(note: str, octave: int) -> int:
     if note not in NOTES or octave not in OCTAVES:
         raise ValueError(errors['notes'])
-    note = NOTES.index(note)
-    note += (NOTES_IN_OCTAVE * octave)
-    if not (0 <= note <= 127):
+    note_i = NOTES.index(note)
+    note_i += (NOTES_IN_OCTAVE * octave)
+    if not (0 <= note_i <= 127):
         raise ValueError(errors['notes'])
-    return note
+    return note_i
 
 class MIDIPort:
     PORT_OPEN = False
