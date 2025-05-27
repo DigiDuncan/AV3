@@ -1,11 +1,12 @@
 from enum import IntEnum
 from pathlib import Path
-from typing import Literal, TypedDict, get_type_hints
+from typing import Literal, TypedDict, cast, get_type_hints
 
 from appdirs import user_data_dir
 
 from digiosc.lib.types import UNFETCHED
 
+# !: There is zero way this works on *nix.
 LOG_DIRECTORY = Path(user_data_dir("VRChat", "VRChat")).parent.parent.parent / "LocalLow" / "VRChat" / "VRChat"
 
 class Gesture(IntEnum):
@@ -82,7 +83,7 @@ def create_default_parameters_dict() -> AvatarParameters:
     r = {}
     for k in get_type_hints(AvatarParameters).keys():
         r[k] = UNFETCHED
-    return r
+    return cast(AvatarParameters, r)
 
-def get_default_parameter_names() -> tuple[str]:
+def get_default_parameter_names() -> tuple[str, ...]:
     return tuple(get_type_hints(AvatarParameters))

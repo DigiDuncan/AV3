@@ -15,7 +15,7 @@ class OSCClient:
 
         self.min_sleep: Seconds = 1/10
 
-        self.client = udp_client.UDPClient(ip, port)
+        self._client = udp_client.UDPClient(ip, port)
 
     def _send(self, address: str, data: tuple[Atomic, ...]):
         msg = OscMessageBuilder(address = address)
@@ -26,7 +26,7 @@ class OSCClient:
         except Exception as e:
             logger.error(e)
             return
-        self.client.send(m)
+        self._client.send(m)
 
     def send_button(self, address: str):
         """Quickly send an ON then OFF message to `address`."""
@@ -38,9 +38,10 @@ class OSCClient:
         msg_off.add_arg(0)
         mo = msg_off.build()
 
-        self.client.send(m)
+        self._client.send(m)
+        # !: Blocking, bad?
         time.sleep(self.min_sleep)
-        self.client.send(mo)
+        self._client.send(mo)
         logger.debug(f"{self.ip}:{self.port} | {address}: BUTTON")
 
 

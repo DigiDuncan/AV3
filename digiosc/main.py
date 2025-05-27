@@ -1,4 +1,4 @@
-from enum import IntEnum, auto
+from enum import IntEnum
 import random
 
 from digiosc.av3.av3 import AV3
