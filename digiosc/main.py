@@ -40,6 +40,23 @@ class Scale(IntEnum):
     SCALE_1_1000 = 12
     SCALE_1_2000 = 13
 
+class Height(IntEnum):
+    HEIGHT_UNLOCKED = 50
+    HEIGHT_19CM = 42
+    HEIGHT_14_5CM = 41
+    HEIGHT_12CM = 40
+    HEIGHT_9_5CM = 39
+    HEIGHT_7_75CM = 38
+    HEIGHT_5_5CM = 37
+    HEIGHT_4_5CM = 36
+    HEIGHT_3_3CM = 35
+    HEIGHT_139CM = 51
+    HEIGHT_177CM = 52
+    HEIGHT_277CM = 54
+    HEIGHT_444CM = 56
+    HEIGHT_666CM = 58
+    HEIGHT_10M = 60
+    HEIGHT_13_3M = 61
 
 SCALES = {
     Scale.SCALE_1: 1,
@@ -58,13 +75,31 @@ SCALES = {
     Scale.SCALE_1_2000: 1 / 2000,
 }
 
+HEIGHTS = {
+    Height.HEIGHT_19CM: 0.19,
+    Height.HEIGHT_14_5CM: 0.145,
+    Height.HEIGHT_12CM: 0.12,
+    Height.HEIGHT_9_5CM: 0.095,
+    Height.HEIGHT_7_75CM: 0.0775,
+    Height.HEIGHT_5_5CM: 0.055,
+    Height.HEIGHT_4_5CM: 0.045,
+    Height.HEIGHT_3_3CM: 0.033,
+    Height.HEIGHT_139CM: 1.39,
+    Height.HEIGHT_177CM: 1.77,
+    Height.HEIGHT_277CM: 2.77,
+    Height.HEIGHT_444CM: 4.44,
+    Height.HEIGHT_666CM: 6.66,
+    Height.HEIGHT_10M: 10,
+    Height.HEIGHT_13_3M: 13.32
+}
+
 def digit(i: int, digit: int) -> int:
     return int(str(i)[digit])
 
 class DigiAV3(AV3):
     """For testing purposes. This is what a user would make."""
     def __init__(self, ip = "127.0.0.1", port = 9000, listen_port = 9001):
-        super().__init__(ip, port, listen_port, default_id = 'avtr_ab4e71a3-36b1-4470-a0c8-a9c007352a15', default_height = 1.11,
+        super().__init__(ip, port, listen_port, default_id = 'avtr_5c0e1c16-38ef-4c1d-b8c3-a627c47b07bf', default_height = 1.11,
                          accurate_scale_polling = False, assume_base_state = True,
                          parameter_prefix_blacklist = ("Go/", "VF", "CheeseSync"),
                          verbose = False)
@@ -129,19 +164,25 @@ class DigiAV3(AV3):
     def on_avatar_change(self, id, is_form):
         self.force_show = False
         if is_form:
+            print("Avatar was changed to a form!")
             self.on_height_change("FORCED", UNFETCHED)
+        else:
+            print("Avatar was changed, but not to a form!")
 
     def on_height_change(self, parameter: str, value: OSCReturnable):
+        print("OHC")
         if self.broken:
             return
-        if not self.current_height:
-            self._set_digits(100000000)
-            return
+        if "SizeOptions" not in self.custom_parameters or self.custom_parameters["SizeOptions"] == Height.HEIGHT_UNLOCKED:
+            if not self.current_height:
+                self._set_digits(100000000)
+                return
+            ch = self.current_height * SCALES[self.custom_parameters["Height/Scale"]]
+        else:
+            ch = HEIGHTS[self.custom_parameters["SizeOptions"]]
 
         self.last_shown_height = self.clock
         # NOTE: Current height is in meters.
-
-        ch = self.current_height * SCALES[self.custom_parameters["Height/Scale"]]
         print(f"\nCURRENT HEIGHT: {ch:.3f}m")
 
         if ch >= 1000:
@@ -176,7 +217,7 @@ class DigiAV3(AV3):
         self.set_bool("Height/Show", True)
 
     def on_parameter_change(self, parameter, value, custom, set):
-        if parameter == "Height/Scale":
+        if parameter == "Height/Scale" or parameter == "ScaleOptions":
             self.on_height_change(parameter, value)
         elif parameter == "Height/ForceShow":
             self.force_show = value
