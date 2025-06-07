@@ -234,8 +234,8 @@ class AV3Base():
                     self._on_viseme_change(Viseme(self.parameters["Viseme"]))
             else:
                 self.custom_parameters[endpoint] = arg
-            if (not endpoint.endswith(('_Angle', "_Stretch", "_Squish"))) or self.verbose:
-                self.logger.info(f"{style.DIM if endpoint in self._just_set else ''}{self.ip}:{self.listen_port} -> CUSTOM {endpoint}: {arg}")
+                if (not endpoint.endswith(('_Angle', "_Stretch", "_Squish"))) or self.verbose:
+                    self.logger.info(f"{style.DIM if endpoint in self._just_set else ''}{self.ip}:{self.listen_port} -> CUSTOM {endpoint}: {arg}")
             self._on_parameter_change(endpoint, arg, endpoint in self.DEFAULT_PARAMETER_NAMES, endpoint in self._just_set)
             if endpoint in self._just_set:
                 self._just_set.remove(endpoint)
