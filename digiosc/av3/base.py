@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Iterable
+from typing import Iterable, Literal
 
 from colored import style
 from pythonosc.dispatcher import Dispatcher
@@ -288,6 +288,14 @@ class AV3Base():
         self.on_start()
         self._server.service_actions = self._on_update
         self._server.serve_forever(self.MAX_SPEED)
+
+    def get_paramater_value(self, key: str) -> OSCReturnable | object:
+        if key not in self.parameters and key not in self.custom_parameters:
+            return UNFETCHED
+        elif key in self.parameters:
+            return self.parameters[key]
+        elif key in self.custom_parameters:
+            return self.custom_parameters[key]
 
     # EVENTS
     def on_avatar_change(self, id: str, is_form: bool) -> None:

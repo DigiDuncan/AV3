@@ -239,24 +239,26 @@ class DigiAV3(AV3):
                 self.last_break = self.clock
 
     def on_key_press(self, key: str):
-        if key == "d":
-            self.set_bool("Charm/Left", True)
-        elif key == "f":
-            self.set_bool("Charm/Down", True)
-        elif key == "j":
-            self.set_bool("Charm/Up", True)
-        elif key == "k":
-            self.set_bool("Charm/Right", True)
+        if self.get_paramater_value("Charm/AllowKeyboard"):
+            if key == "d":
+                self.set_bool("Charm/Left", True)
+            elif key == "f":
+                self.set_bool("Charm/Down", True)
+            elif key == "j":
+                self.set_bool("Charm/Up", True)
+            elif key == "k":
+                self.set_bool("Charm/Right", True)
 
     def on_key_release(self, key: str):
-        if key == "d":
-            self.set_bool("Charm/Left", False)
-        elif key == "f":
-            self.set_bool("Charm/Down", False)
-        elif key == "j":
-            self.set_bool("Charm/Up", False)
-        elif key == "k":
-            self.set_bool("Charm/Right", False)
+        if self.get_paramater_value("Charm/AllowKeyboard"):
+            if key == "d":
+                self.set_bool("Charm/Left", False)
+            elif key == "f":
+                self.set_bool("Charm/Down", False)
+            elif key == "j":
+                self.set_bool("Charm/Up", False)
+            elif key == "k":
+                self.set_bool("Charm/Right", False)
 
 def main():
     setup_logging("digiosc")
