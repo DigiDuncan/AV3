@@ -7,7 +7,7 @@ from pythonosc.dispatcher import Dispatcher
 from pythonosc.osc_server import BlockingOSCUDPServer
 
 from digiosc.lib.logging import setup_logging
-from digiosc.lib.types import IP, UNFETCHED, Atomic, OSCReturnable, Port, Velocity
+from digiosc.lib.types import IP, UNFETCHED, Atomic, OSCReturnable, ParameterReturnValue, Port, Velocity
 from digiosc.lib.vrchat import AvatarParameters, Gesture, Viseme, create_default_parameters_dict, get_default_parameter_names
 from digiosc.osc.client import OSCClient
 
@@ -289,13 +289,14 @@ class AV3Base():
         self._server.service_actions = self._on_update
         self._server.serve_forever(self.MAX_SPEED)
 
-    def get_paramater_value(self, key: str) -> OSCReturnable | object:
+    def get_paramater_value(self, key: str) -> ParameterReturnValue:
         if key not in self.parameters and key not in self.custom_parameters:
             return UNFETCHED
         elif key in self.parameters:
             return self.parameters[key]
         elif key in self.custom_parameters:
             return self.custom_parameters[key]
+        return UNFETCHED
 
     # EVENTS
     def on_avatar_change(self, id: str, is_form: bool) -> None:

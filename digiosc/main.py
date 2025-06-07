@@ -3,7 +3,7 @@ import random
 
 from digiosc.av3.av3 import AV3
 from digiosc.lib.logging import setup_logging
-from digiosc.lib.types import UNFETCHED, OSCReturnable, Seconds
+from digiosc.lib.types import UNFETCHED, OSCReturnable, ParameterReturnValue, Seconds
 
 ###
 # !: THIS IS IMPORTANT
@@ -169,7 +169,7 @@ class DigiAV3(AV3):
         else:
             print("Avatar was changed, but not to a form!")
 
-    def on_height_change(self, parameter: str, value: OSCReturnable):
+    def on_height_change(self, parameter: str, value: ParameterReturnValue):
         print("OHC")
         if self.broken:
             return
