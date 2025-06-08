@@ -179,7 +179,7 @@ class DigiAV3(AV3):
                 return
             ch = self.current_height * SCALES[self.custom_parameters["Height/Scale"]]
         else:
-            ch = HEIGHTS[self.custom_parameters["SizeOptions"]]
+            ch = HEIGHTS[self.custom_parameters["SizeOptions"]] * SCALES[self.custom_parameters["Height/Scale"]]
 
         self.last_shown_height = self.clock
         # NOTE: Current height is in meters.
@@ -217,7 +217,7 @@ class DigiAV3(AV3):
         self.set_bool("Height/Show", True)
 
     def on_parameter_change(self, parameter, value, custom, set):
-        if parameter == "Height/Scale" or parameter == "ScaleOptions":
+        if parameter == "Height/Scale" or parameter == "SizeOptions":
             self.on_height_change(parameter, value)
         elif parameter == "Height/ForceShow":
             self.force_show = value
