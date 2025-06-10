@@ -7,8 +7,8 @@ from pythonosc.dispatcher import Dispatcher
 from pythonosc.osc_server import BlockingOSCUDPServer
 
 from digiosc.lib.logging import setup_logging
-from digiosc.lib.types import IP, UNFETCHED, Atomic, OSCReturnable, ParameterReturnValue, Port, Velocity
-from digiosc.lib.vrchat import AvatarParameters, Gesture, Viseme, create_default_parameters_dict, get_default_parameter_names
+from digiosc.lib.types import IP, UNFETCHED, Atomic, OSCReturnable, ParameterReturnValue, Port, UnfetchedType, Velocity
+from digiosc.lib.vrchat import AvatarParameters, Gesture, TrackingType, Viseme, create_default_parameters_dict, get_default_parameter_names
 from digiosc.osc.client import OSCClient
 
 
@@ -29,7 +29,7 @@ class AV3Base():
     DEFAULT_PARAMETER_NAMES = get_default_parameter_names()
     SCALE_PARAMETER_NAMES = ("ScaleFactor", "EyeHeightAsMeters")
     ALL_SCALE_PARAMETER_NAMES = ("ScaleFactor", "EyeHeightAsMeters", "ScaleFactorInverse", "EyeHeightAsPercent", "ScaleModified")
-    VERBOSE_PARAMETER_NAMES = ("Voice", "Viseme", "AngularY", "VelocityX", "VelocityY", "VelocityZ", "VelocityMagnitude")
+    VERBOSE_PARAMETER_NAMES = ("Voice", "Viseme", "AngularY", "VelocityX", "VelocityY", "VelocityZ", "VelocityMagnitude", "Grounded")
     VELOCITY_PARAMETER_NAMES = ("VelocityX", "VelocityY", "VelocityZ", "VelocityMagnitude")
 
     def __init__(self, ip: IP = "127.0.0.1", port: Port = 9000, listen_port: Port = 9001, *,
@@ -107,6 +107,8 @@ class AV3Base():
 
         self._start_time = time.time()
         self._last_tick = time.time()
+
+        self._tracking_type: int | UnfetchedType = UNFETCHED
 
     @property
     def clock(self) -> float:
@@ -232,6 +234,10 @@ class AV3Base():
                         self._on_velocity_change((self.parameters["VelocityX"], self.parameters["VelocityY"], self.parameters["VelocityZ"]))
                 if endpoint == "Viseme":
                     self._on_viseme_change(Viseme(self.parameters["Viseme"]))
+                if endpoint == "TrackingType":
+                    if self._tracking_type == TrackingType.AV2_HANDS_ONLY and arg != TrackingType.AV2_HANDS_ONLY:
+                        self._on_avatar_reset()
+                    self._tracking_type = arg
             else:
                 self.custom_parameters[endpoint] = arg
                 if (not endpoint.endswith(('_Angle', "_Stretch", "_Squish"))) or self.verbose:
@@ -251,6 +257,12 @@ class AV3Base():
         if self.assume_base_state:
             self._set_defaults()
         self.on_avatar_change(id, is_form)
+
+    def _on_avatar_reset(self):
+        if self.current_avatar_id in self.forms:
+            if self.assume_base_state:
+                self._set_defaults()
+        self.on_avatar_reset()
 
     def _on_height_change(self, parameter: str, value: OSCReturnable):
         if not self.accurate_scale_polling:
@@ -301,6 +313,10 @@ class AV3Base():
     # EVENTS
     def on_avatar_change(self, id: str, is_form: bool) -> None:
         """Fires when a new avatar is loaded. `is_form` is True if the new avatar is in the `forms` list."""
+        ...
+
+    def on_avatar_reset(self) -> None:
+        """Fires when an avatar is reset."""
         ...
 
     def on_height_change(self, parameter: str, value: OSCReturnable) -> None:

@@ -18,6 +18,7 @@ from digiosc.lib.types import UNFETCHED, OSCReturnable, ParameterReturnValue, Se
 
 DASH = 10
 OFF = 11
+ALL_DASHES = 1e9
 
 MILLIMETERS = 0
 CENTIMETERS = 1
@@ -113,14 +114,8 @@ class DigiAV3(AV3):
         self.broken = False
 
     def on_start(self):
-        self.set_int("Height/DigitA", DASH)
-        self.set_int("Height/DigitB", DASH)
-        self.set_int("Height/DigitC", DASH)
-        self.set_bool("Height/DotA", False)
-        self.set_bool("Height/DotB", False)
-        self.set_bool("Height/DotC", False)
         self.set_int("Height/Unit", CENTIMETERS)
-        self.set_int("Height/Scale", Scale.SCALE_1)
+        self.set_int("Height/Scale", Scale.SCALE_1.value)
         self.set_bool("Height/Show", False)
 
     def _set_digits(self, value: float, decimal = 0):
@@ -169,13 +164,15 @@ class DigiAV3(AV3):
         else:
             print("Avatar was changed, but not to a form!")
 
+    def on_avatar_reset(self) -> None:
+        self.on_height_change("FORCED", UNFETCHED)
+
     def on_height_change(self, parameter: str, value: ParameterReturnValue):
-        print("OHC")
         if self.broken:
             return
         if "SizeOptions" not in self.custom_parameters or self.custom_parameters["SizeOptions"] == Height.HEIGHT_UNLOCKED:
             if not self.current_height:
-                self._set_digits(100000000)
+                self._set_digits(ALL_DASHES)
                 return
             ch = self.current_height * SCALES[self.custom_parameters["Height/Scale"]]
         else:
@@ -248,6 +245,8 @@ class DigiAV3(AV3):
                 self.set_bool("Charm/Up", True)
             elif key == "k":
                 self.set_bool("Charm/Right", True)
+        if key == "=":
+            print(self.custom_parameters)
 
     def on_key_release(self, key: str):
         if self.get_paramater_value("Charm/AllowKeyboard"):
