@@ -44,13 +44,11 @@ class OSCClient:
         self._client.send(mo)
         logger.debug(f"{self.ip}:{self.port} | {address}: BUTTON")
 
-
     def send_int(self, address: str, data: Atomic):
         """Set data at address `address` to integer `data`."""
         senddata = int(data)
         self._send(address, (senddata,))
         logger.debug(f"{self.ip}:{self.port} | {address}: {data}")
-
 
     def send_float(self, address: str, data: Atomic):
         """Set data at address `address` to float `data`."""
@@ -58,13 +56,11 @@ class OSCClient:
         self._send(address, (senddata,))
         logger.debug(f"{self.ip}:{self.port} | {address}: {data}")
 
-
     def send_bool(self, address: str, data: Atomic):
         """Set data at address `address` to bool `data`."""
         senddata = bool(data)
         self._send(address, (senddata,))
         logger.debug(f"{self.ip}:{self.port} | {address}: {data}")
-
 
     def send_string(self, address: str, data: Atomic):
         """Set data at address `address` to string `data`."""

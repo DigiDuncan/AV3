@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Iterable, Literal
+from typing import Iterable
 
 from colored import style
 from pythonosc.dispatcher import Dispatcher

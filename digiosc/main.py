@@ -1,9 +1,12 @@
 from enum import IntEnum
 import random
+import logging
 
 from digiosc.av3.av3 import AV3
 from digiosc.lib.logging import setup_logging
-from digiosc.lib.types import UNFETCHED, OSCReturnable, ParameterReturnValue, Seconds
+from digiosc.lib.types import UNFETCHED, ParameterReturnValue, Seconds
+
+logger = logging.getLogger("digiosc")
 
 ###
 # !: THIS IS IMPORTANT
@@ -159,10 +162,10 @@ class DigiAV3(AV3):
     def on_avatar_change(self, id, is_form):
         self.force_show = False
         if is_form:
-            print("Avatar was changed to a form!")
+            logger.info("Avatar was changed to a form!")
             self.on_height_change("FORCED", UNFETCHED)
         else:
-            print("Avatar was changed, but not to a form!")
+            logger.info("Avatar was changed, but not to a form!")
 
     def on_avatar_reset(self) -> None:
         self.on_height_change("FORCED", UNFETCHED)
@@ -180,7 +183,7 @@ class DigiAV3(AV3):
 
         self.last_shown_height = self.clock
         # NOTE: Current height is in meters.
-        print(f"\nCURRENT HEIGHT: {ch:.3f}m")
+        logger.info(f"\nCURRENT HEIGHT: {ch:.3f}m")
 
         if ch >= 1000:
             # 1km+
