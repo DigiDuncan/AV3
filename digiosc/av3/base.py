@@ -9,7 +9,7 @@ from pythonosc.osc_server import BlockingOSCUDPServer
 from digiosc.lib.logging import setup_logging
 from digiosc.lib.types import IP, UNFETCHED, Atomic, OSCReturnable, ParameterReturnValue, Port, UnfetchedType, Velocity
 from digiosc.lib.vrchat import AvatarParameters, Gesture, TrackingType, Viseme, create_default_parameters_dict, get_default_parameter_names
-from digiosc.osc.client import OSCClient
+from digiosc.osc import OSCClient
 
 
 class AV3Base():
