@@ -62,7 +62,7 @@ class Height(IntEnum):
     HEIGHT_10M = 60
     HEIGHT_13_3M = 61
 
-SCALES = {
+SCALES: dict[Scale, int | float] = {
     Scale.SCALE_1: 1,
     Scale.SCALE_5: 5,
     Scale.SCALE_10: 10,
@@ -79,7 +79,7 @@ SCALES = {
     Scale.SCALE_1_2000: 1 / 2000,
 }
 
-HEIGHTS = {
+HEIGHTS: dict[Height, int | float] = {
     Height.HEIGHT_19CM: 0.19,
     Height.HEIGHT_14_5CM: 0.145,
     Height.HEIGHT_12CM: 0.12,

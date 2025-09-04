@@ -48,22 +48,22 @@ class AV3(AV3Base):
         Represents an avatar you can send parameter controls to with OSC, and recieve data from and about.
         
         Has additional functions for interfacing with various input devices.
-        `ip`: The IP to listen/send on.
-        `port`: The sending port.
-        `listen_port`: The listening port.
-        `default_id` (optional): The ID of the avatar you intend to start in.
-        `default_height` (optional): The height of the default avatar (and all its forms.)
-        `forms` (optional): A list of avatar IDs considered to be the same "form" as this one. In theory,
+        - `ip`: The IP to listen/send on.
+        - `port`: The sending port.
+        - `listen_port`: The listening port.
+        - `default_id` (optional): The ID of the avatar you intend to start in.
+        - `default_height` (optional): The height of the default avatar (and all its forms.)
+        - `forms` (optional): A list of avatar IDs considered to be the same "form" as this one. In theory,
             these should all share a height and list of parameters.
-        `custom_parameters` (optional): a dictionary of custom parameters on this avatar and their default state.
-            Parameters not in this dictionary will be populated as their updated.
-        `assume_base_state` (optional): sets some assumed base parameters in an attempt to deal with the fact that
+        - `custom_parameters` (optional): a dictionary of custom parameters on this avatar and their default state.
+            - Parameters not in this dictionary will be populated as their updated.
+        - `assume_base_state` (optional): sets some assumed base parameters in an attempt to deal with the fact that
             VRChat only sends changes to state.
-        `accurate_scale_polling` (optional): whether to fire `on_height_change` for all scale-based events (true),
+        - `accurate_scale_polling` (optional): whether to fire `on_height_change` for all scale-based events (true),
             or only on `ScaleFactor` (false).
-        `parameter_prefix_blacklist` (optional): A list of parameter prefixes to ignore when encountered.
-        `round_floats_to` (optional): A decimal amount to round incoming floats to. Defaults to 3, can be None.
-        `verbose`: whether to log spammy parameters, like Viseme or Velocity. `on_parameter_change` will still
+        - `parameter_prefix_blacklist` (optional): A list of parameter prefixes to ignore when encountered.
+        - `round_floats_to` (optional): A decimal amount to round incoming floats to. Defaults to 3, can be None.
+        - `verbose`: whether to log spammy parameters, like Viseme or Velocity. `on_parameter_change` will still
             capture these events.
 
         Available events:

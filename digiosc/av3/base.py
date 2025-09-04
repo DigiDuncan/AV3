@@ -33,33 +33,33 @@ class AV3Base():
     VELOCITY_PARAMETER_NAMES = ("VelocityX", "VelocityY", "VelocityZ", "VelocityMagnitude")
 
     def __init__(self, ip: IP = "127.0.0.1", port: Port = 9000, listen_port: Port = 9001, *,
-                 default_id: str = None, default_height: float = None,
-                 forms: Iterable[str] = None,
-                 custom_parameters: dict[str, OSCReturnable] = None,
+                 default_id: str | None = None, default_height: float | None = None,
+                 forms: Iterable[str] | None = None,
+                 custom_parameters: dict[str, OSCReturnable] | None = None,
                  assume_base_state: bool = True,
                  accurate_scale_polling: bool = False,
-                 parameter_prefix_blacklist: tuple = None,
+                 parameter_prefix_blacklist: tuple | None = None,
                  round_floats_to: int | None = 3,
                  verbose: bool = False):
         """
         Represents an avatar you can send parameter controls to with OSC, and recieve data from and about.
 
-        `ip`: The IP to listen/send on.
-        `port`: The sending port.
-        `listen_port`: The listening port.
-        `default_id` (optional): The ID of the avatar you intend to start in.
-        `default_height` (optional): The height of the default avatar (and all its forms.)
-        `forms` (optional): A list of avatar IDs considered to be the same "form" as this one. In theory,
+        - `ip`: The IP to listen/send on.
+        - `port`: The sending port.
+        - `listen_port`: The listening port.
+        - `default_id` (optional): The ID of the avatar you intend to start in.
+        - `default_height` (optional): The height of the default avatar (and all its forms.)
+        - `forms` (optional): A list of avatar IDs considered to be the same "form" as this one. In theory,
             these should all share a height and list of parameters.
-        `custom_parameters` (optional): a dictionary of custom parameters on this avatar and their default state.
-            Parameters not in this dictionary will be populated as their updated.
-        `assume_base_state` (optional): sets some assumed base parameters in an attempt to deal with the fact that
+        - `custom_parameters` (optional): a dictionary of custom parameters on this avatar and their default state.
+            - Parameters not in this dictionary will be populated as their updated.
+        - `assume_base_state` (optional): sets some assumed base parameters in an attempt to deal with the fact that
             VRChat only sends changes to state.
-        `accurate_scale_polling` (optional): whether to fire `on_height_change` for all scale-based events (true),
+        - `accurate_scale_polling` (optional): whether to fire `on_height_change` for all scale-based events (true),
             or only on `ScaleFactor` (false).
-        `parameter_prefix_blacklist` (optional): A list of parameter prefixes to ignore when encountered.
-        `round_floats_to` (optional): A decimal amount to round incoming floats to. Defaults to 3, can be None.
-        `verbose`: whether to log spammy parameters, like Viseme or Velocity. `on_parameter_change` will still
+        - `parameter_prefix_blacklist` (optional): A list of parameter prefixes to ignore when encountered.
+        - `round_floats_to` (optional): A decimal amount to round incoming floats to. Defaults to 3, can be None.
+        - `verbose`: whether to log spammy parameters, like Viseme or Velocity. `on_parameter_change` will still
             capture these events.
 
         Available events:
@@ -280,7 +280,7 @@ class AV3Base():
         self.on_viseme_change(viseme)
 
     def _on_unknown_message(self, address: str, message: Atomic):
-        self.on_unknown_message(self, address, message)
+        self.on_unknown_message(address, message)
 
     def _on_update(self):
         self._last_tick = time.time()
