@@ -29,7 +29,7 @@ class AV3Base():
     DEFAULT_PARAMETER_NAMES = get_default_parameter_names()
     SCALE_PARAMETER_NAMES = ("ScaleFactor", "EyeHeightAsMeters")
     ALL_SCALE_PARAMETER_NAMES = ("ScaleFactor", "EyeHeightAsMeters", "ScaleFactorInverse", "EyeHeightAsPercent", "ScaleModified")
-    VERBOSE_PARAMETER_NAMES = ("Voice", "Viseme", "AngularY", "VelocityX", "VelocityY", "VelocityZ", "VelocityMagnitude", "Grounded")
+    VERBOSE_PARAMETER_NAMES = ("Voice", "Viseme", "AngularY", "VelocityX", "VelocityY", "VelocityZ", "VelocityMagnitude", "Grounded", "Upright", "GestureLeftWeight", "GestureRightWeight")
     VELOCITY_PARAMETER_NAMES = ("VelocityX", "VelocityY", "VelocityZ", "VelocityMagnitude")
 
     def __init__(self, ip: IP = "127.0.0.1", port: Port = 9000, listen_port: Port = 9001, *,
