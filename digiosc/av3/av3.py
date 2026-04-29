@@ -1,3 +1,6 @@
+# pyright: reportArgumentType=false
+# pyright: reportAttributeAccessIssue=false
+
 from collections.abc import Callable
 from dataclasses import dataclass
 import json
@@ -37,10 +40,10 @@ class URLHandler:
 
 class AV3(AV3Base):
     def __init__(self, ip = "127.0.0.1", port = 9000, listen_port = 9001, *,
-                 default_id = None, default_height = None, forms = None,
+                 eye_height_factor = 1.0,
+                 default_id = None, forms = None,
                  custom_parameters = None,
                  assume_base_state = True,
-                 accurate_scale_polling = False,
                  parameter_prefix_blacklist = None,
                  round_floats_to = 3, 
                  verbose = False):
@@ -51,16 +54,15 @@ class AV3(AV3Base):
         - `ip`: The IP to listen/send on.
         - `port`: The sending port.
         - `listen_port`: The listening port.
+        - `eye_height_factor` (optional): A number representing the model's true height ratio compared to the
+        eye height returned by VRChat. Defaults to 1.0.
         - `default_id` (optional): The ID of the avatar you intend to start in.
-        - `default_height` (optional): The height of the default avatar (and all its forms.)
         - `forms` (optional): A list of avatar IDs considered to be the same "form" as this one. In theory,
-            these should all share a height and list of parameters.
+            these should all share a list of parameters.
         - `custom_parameters` (optional): a dictionary of custom parameters on this avatar and their default state.
             - Parameters not in this dictionary will be populated as their updated.
         - `assume_base_state` (optional): sets some assumed base parameters in an attempt to deal with the fact that
             VRChat only sends changes to state.
-        - `accurate_scale_polling` (optional): whether to fire `on_height_change` for all scale-based events (true),
-            or only on `ScaleFactor` (false).
         - `parameter_prefix_blacklist` (optional): A list of parameter prefixes to ignore when encountered.
         - `round_floats_to` (optional): A decimal amount to round incoming floats to. Defaults to 3, can be None.
         - `verbose`: whether to log spammy parameters, like Viseme or Velocity. `on_parameter_change` will still
@@ -87,7 +89,7 @@ class AV3(AV3Base):
         on_midi_off
         on_midi_program_change
         on_midi_control_change
-        on_midi_pitchweel
+        on_midi_pitchwheel
         on_button_press
         on_button_release
         on_stick_move
@@ -110,12 +112,11 @@ class AV3(AV3Base):
         self._last_polled_urls: dict[str, Seconds] = {}
 
         super().__init__(ip, port, listen_port,
+                         eye_height_factor = eye_height_factor,
                          default_id = default_id,
-                         default_height = default_height,
                          forms = forms,
                          custom_parameters = custom_parameters,
                          assume_base_state = assume_base_state,
-                         accurate_scale_polling = accurate_scale_polling,
                          parameter_prefix_blacklist = parameter_prefix_blacklist,
                          round_floats_to = round_floats_to,
                          verbose = verbose)
@@ -158,7 +159,7 @@ class AV3(AV3Base):
                 case 'program_change':
                     self._on_midi_control_change(msg['program'], msg['channel'])
                 case 'pitchwheel':
-                    self._on_midi_pitchweel(msg['pitch'], msg['channel'])
+                    self._on_midi_pitchwheel(msg['pitch'], msg['channel'])
     
     def _handle_controller(self):
         events = XInput.get_events()
@@ -201,7 +202,7 @@ class AV3(AV3Base):
                 contents = fh.processor(contents)
             _file_contents = self._file_contents
             if fh.path in _file_contents and _file_contents[path] == contents:
-                return
+                continue
             _file_contents[path] = contents
             _last_polled[path] = self.clock
             self._on_file_changed(path, contents)
@@ -227,7 +228,7 @@ class AV3(AV3Base):
                 contents = uh.processor(contents)
             _url_contents = self._url_contents
             if uh.url in _url_contents and _url_contents[url] == contents:
-                return
+                continue
             _url_contents[url] = contents
             _last_polled[url] = self.clock
             self._on_url_changed(url, contents)
@@ -267,8 +268,8 @@ class AV3(AV3Base):
     def _on_midi_control_change(self, control: Program, channel: Channel):
         self.on_midi_control_change(control, channel)
 
-    def _on_midi_pitchweel(self, pitch: int, channel: Channel):
-        self.on_midi_control_change(pitch, channel)
+    def _on_midi_pitchwheel(self, pitch: int, channel: Channel):
+        self.on_midi_pitchwheel(pitch, channel)
 
     def _on_button_press(self, button: Button, controller_id: int):
         self.on_button_press(button, controller_id)
@@ -289,12 +290,13 @@ class AV3(AV3Base):
         self.on_url_changed(url, contents)
 
     def _on_update(self):
-        self._last_tick = time.time()
+        now = time.time()
         self._handle_midi()
         self._handle_controller()
         self._handle_files()
         self._handle_urls()
-        self.on_update()
+        self.on_update(now - self._last_tick)
+        self._last_tick = now
 
     ### PUBLIC FUNCTIONS
 
@@ -331,6 +333,9 @@ class AV3(AV3Base):
             self._url_handlers.pop(url)
 
     def start(self):
+        """Start the listening server."""
+        # *: This currently doesn't do anything different to the superclass,
+        # but it's here in case we decide to in the future, or a user wants to override it.
         super().start()
 
     ### EVENTS
@@ -378,7 +383,7 @@ class AV3(AV3Base):
         """Fired when a MIDI control changes."""
         ...
 
-    def on_midi_pitchweel(self, pitch: int, channel: Channel):
+    def on_midi_pitchwheel(self, pitch: int, channel: Channel):
         """Fired when a MIDI pitchwheel is bent."""
         ...
 

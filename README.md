@@ -21,7 +21,7 @@ on_midi_on
 on_midi_off
 on_midi_program_change
 on_midi_control_change
-on_midi_pitchweel
+on_midi_pitchwheel
 on_button_press
 on_button_release
 on_stick_move

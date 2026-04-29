@@ -1,14 +1,14 @@
 import logging
 import time
-from typing import Iterable
+from typing import Iterable, cast
 
 from colored import style
 from pythonosc.dispatcher import Dispatcher
 from pythonosc.osc_server import BlockingOSCUDPServer
 
 from digiosc.lib.logging import setup_logging
-from digiosc.lib.types import IP, UNFETCHED, Atomic, OSCReturnable, ParameterReturnValue, Port, UnfetchedType, Velocity
-from digiosc.lib.vrchat import AvatarParameters, Gesture, TrackingType, Viseme, create_default_parameters_dict, get_default_parameter_names
+from digiosc.lib.types import IP, UNFETCHED, Atomic, OSCReturnable, ParameterReturnValue, Port, Position, Rotation, Seconds, UnfetchedType, Velocity
+from digiosc.lib.vrchat import AvatarParameters, Gesture, Tracker, TrackingType, Viseme, create_default_parameters_dict, get_default_parameter_names
 from digiosc.osc import OSCClient
 
 
@@ -27,17 +27,15 @@ class AV3Base():
     MAX_SPEED = 1 / 10
 
     DEFAULT_PARAMETER_NAMES = get_default_parameter_names()
-    SCALE_PARAMETER_NAMES = ("ScaleFactor", "EyeHeightAsMeters")
-    ALL_SCALE_PARAMETER_NAMES = ("ScaleFactor", "EyeHeightAsMeters", "ScaleFactorInverse", "EyeHeightAsPercent", "ScaleModified")
     VERBOSE_PARAMETER_NAMES = ("Voice", "Viseme", "AngularY", "VelocityX", "VelocityY", "VelocityZ", "VelocityMagnitude", "Grounded", "Upright", "GestureLeftWeight", "GestureRightWeight")
     VELOCITY_PARAMETER_NAMES = ("VelocityX", "VelocityY", "VelocityZ", "VelocityMagnitude")
 
     def __init__(self, ip: IP = "127.0.0.1", port: Port = 9000, listen_port: Port = 9001, *,
-                 default_id: str | None = None, default_height: float | None = None,
+                 eye_height_factor: float = 1.0,
+                 default_id: str | None = None,
                  forms: Iterable[str] | None = None,
                  custom_parameters: dict[str, OSCReturnable] | None = None,
                  assume_base_state: bool = True,
-                 accurate_scale_polling: bool = False,
                  parameter_prefix_blacklist: tuple | None = None,
                  round_floats_to: int | None = 3,
                  verbose: bool = False):
@@ -47,16 +45,15 @@ class AV3Base():
         - `ip`: The IP to listen/send on.
         - `port`: The sending port.
         - `listen_port`: The listening port.
+        - `eye_height_factor` (optional): A number representing the model's true height ratio compared to the
+        eye height returned by VRChat. Defaults to 1.0.
         - `default_id` (optional): The ID of the avatar you intend to start in.
-        - `default_height` (optional): The height of the default avatar (and all its forms.)
         - `forms` (optional): A list of avatar IDs considered to be the same "form" as this one. In theory,
-            these should all share a height and list of parameters.
+            these should all share a list of parameters.
         - `custom_parameters` (optional): a dictionary of custom parameters on this avatar and their default state.
             - Parameters not in this dictionary will be populated as their updated.
         - `assume_base_state` (optional): sets some assumed base parameters in an attempt to deal with the fact that
             VRChat only sends changes to state.
-        - `accurate_scale_polling` (optional): whether to fire `on_height_change` for all scale-based events (true),
-            or only on `ScaleFactor` (false).
         - `parameter_prefix_blacklist` (optional): A list of parameter prefixes to ignore when encountered.
         - `round_floats_to` (optional): A decimal amount to round incoming floats to. Defaults to 3, can be None.
         - `verbose`: whether to log spammy parameters, like Viseme or Velocity. `on_parameter_change` will still
@@ -84,7 +81,6 @@ class AV3Base():
         if custom_parameters:
             self.custom_parameters.update(custom_parameters)
         self.assume_base_state = assume_base_state
-        self.accurate_scale_polling = accurate_scale_polling
         self.parameter_prefix_blacklist = tuple() if parameter_prefix_blacklist is None else parameter_prefix_blacklist
         self.round_floats_to = round_floats_to
         self.verbose = verbose
@@ -97,7 +93,13 @@ class AV3Base():
         self._server = BlockingOSCUDPServer((ip, listen_port), self._dispatcher)
 
         self.current_avatar_id = default_id
-        self.base_height = default_height
+
+        self.current_height: float | UnfetchedType = UNFETCHED
+        self.eye_height_factor = eye_height_factor
+
+        self.world_min_height: float = 0.2
+        self.world_max_height: float = 5.0
+        self.world_allows_scaling: bool = True
 
         self.forms = () if forms is None else tuple(forms)
         self.forms = set((default_id,) + tuple(self.forms)) if default_id else set(self.forms)
@@ -113,12 +115,6 @@ class AV3Base():
     @property
     def clock(self) -> float:
         return self._last_tick - self._start_time
-
-    @property
-    def current_height(self) -> float | None:
-        if self.base_height is not None and self.parameters["ScaleFactor"] is not UNFETCHED:
-            return self.base_height * self.parameters["ScaleFactor"]
-        return None
     
     def _set_defaults(self):
         self.parameters["Viseme"] = Viseme.SIL
@@ -178,32 +174,83 @@ class AV3Base():
         self.logger.info(f"{self.ip}:{self.port} <- {parameter}: {value}")
 
     def control_button(self, button: str):
+        """Sends a controller input to VRChat."""
         self._client.send_button("/input/" + button)
         self.logger.info(f"{self.ip}:{self.port} <- BUTTON: {button}")
 
     def control_joystick(self, axis: str, value: float):
+        """Sends a controller joystick input to VRChat."""
         self._client.send_float("/input/" + axis, value)
         self.logger.info(f"{self.ip}:{self.port} <- JOYSTICK/{axis}: {value}")
 
     def message(self, message: str):
+        """Sends a generic message to VRChat over OSC."""
         self._client.send_string("/message/", message)
         self.logger.info(f"{self.ip}:{self.port} <- MESSAGE: {message}")
 
     def set_chatbox_typing(self, state: bool):
-        self._client._send("/chatbox/typing", (state,))
+        """Set the current typing state on the user. Shows an indicator in-game."""
+        self._client.send_bool("/chatbox/typing", state)
+        self.logger.info(f"{self.ip}:{self.port} <- TYPING: {state}")
 
     def send_chatbox_message(self, message: str, immediate: bool = True, sfx: bool = True):
+        """Send a message using the in-game chatbox."""
         self._client._send("/chatbox/message", (message, immediate, sfx))
+        self.logger.info(f"{self.ip}:{self.port} <- CHATBOX: {message}")
+
+    def set_height(self, height: float, bypass_factor = False):
+        """
+        Set the avatar's current height. If `bypass_factor` is True, doesn't account for model height
+        and sets eye height directly.
+        VRChat's allowed range is [0.01-10000], and this function will clamp to those values. 
+        """
+        if not bypass_factor:
+            height /= self.eye_height_factor
+
+        if height < 0.01:
+            self.logger.warning(f"Eye height set lower than 1cm ({height:.06f}m). Eye height will be set to 1cm.")
+        elif height > 10_000:
+            self.logger.warning(f"Eye height set higher than 10km ({height:.06f}m). Eye height will be set to 10km.")
+        height = min(10_000, max(0.01, height))
+        self._client.send_float("/avatar/eyeheight", height)
+
+    def set_tracker_position(self, tracker: Tracker, position: Position):
+        """
+        Set the position of the desired tracker.
+        https://docs.vrchat.com/docs/osc-trackers
+        """
+        self._client._send(f"/tracking/trackers/{tracker.value}/position", position)
+        if self.verbose:
+            self.logger.info(f"{self.ip}:{self.port} <- TRACKER POS: {tracker.name} {position}")
+
+    def set_tracker_rotation(self, tracker: Tracker, rotation: Rotation):
+        """
+        Set the rotation of the desired tracker.
+        https://docs.vrchat.com/docs/osc-trackers
+        """
+        self._client._send(f"/tracking/trackers/{tracker.value}/rotation", rotation)
+        if self.verbose:
+            self.logger.info(f"{self.ip}:{self.port} <- TRACKER ROT: {tracker.name} {rotation}")
+
+    def set_head_position(self, position: Position):
+        """
+        Set the position of the head.
+        https://docs.vrchat.com/docs/osc-trackers
+        """
+        self._client._send("/tracking/trackers/head/position", position)
+        if self.verbose:
+            self.logger.info(f"{self.ip}:{self.port} <- HEAD POS: {position}")
+
+    def set_head_rotation(self, rotation: Rotation):
+        """
+        Set the rotation of the head.
+        https://docs.vrchat.com/docs/osc-trackers
+        """
+        self._client._send("/tracking/trackers/head/rotation", rotation)
+        if self.verbose:
+            self.logger.info(f"{self.ip}:{self.port} <- HEAD ROT: {rotation}")
 
     # INTERNAL FUNCTIONS
-
-    def _derive_base_height(self):
-        if all([self.parameters.get(x) is not UNFETCHED for x in self.SCALE_PARAMETER_NAMES]):
-            if self.parameters["ScaleModified"] is False or self.parameters["ScaleFactor"] == 1.0:
-                self.base_height = round(self.parameters["EyeHeightAsMeters"], 3)
-            else:
-                self.base_height = round(self.parameters["EyeHeightAsMeters"] / self.parameters["ScaleFactor"], 3)
-            self.logger.warning(f"Derived base height: {self.base_height}m")
 
     def _handle(self, address: str, *args: OSCReturnable):
         if address.startswith("/avatar/parameters"):
@@ -224,11 +271,6 @@ class AV3Base():
                 self.parameters[endpoint] = arg
                 if (endpoint not in self.VERBOSE_PARAMETER_NAMES) or self.verbose:
                     self.logger.info(f"{self.ip}:{self.listen_port} -> {endpoint}: {arg}")
-                if endpoint in self.SCALE_PARAMETER_NAMES and self.base_height is None:
-                    # Handle base height fetching
-                    self._derive_base_height()
-                if endpoint in self.ALL_SCALE_PARAMETER_NAMES:
-                    self._on_height_change(endpoint, arg)
                 if endpoint in self.VELOCITY_PARAMETER_NAMES:
                     if self.parameters["VelocityX"] is not UNFETCHED and self.parameters["VelocityY"] is not UNFETCHED and self.parameters["VelocityZ"] is not UNFETCHED:
                         self._on_velocity_change((self.parameters["VelocityX"], self.parameters["VelocityY"], self.parameters["VelocityZ"]))
@@ -237,17 +279,40 @@ class AV3Base():
                 if endpoint == "TrackingType":
                     if self._tracking_type == TrackingType.AV2_HANDS_ONLY and arg != TrackingType.AV2_HANDS_ONLY:
                         self._on_avatar_reset()
+                    arg = cast(int, arg)
                     self._tracking_type = arg
             else:
                 self.custom_parameters[endpoint] = arg
                 if (not endpoint.endswith(('_Angle', "_Stretch", "_Squish"))) or self.verbose:
-                    self.logger.info(f"{style.DIM if endpoint in self._just_set else ''}{self.ip}:{self.listen_port} -> CUSTOM {endpoint}: {arg}")
+                    self.logger.info(f"{style.DIM if endpoint in self._just_set else ''}{self.ip}:{self.listen_port} -> CUSTOM {endpoint}: {arg}")  # type: ignore
             self._on_parameter_change(endpoint, arg, endpoint in self.DEFAULT_PARAMETER_NAMES, endpoint in self._just_set)
             if endpoint in self._just_set:
                 self._just_set.remove(endpoint)
         elif address == "/avatar/change":
             self.logger.info(f"{self.ip}:{self.listen_port} -> AVATAR CHANGE: {args[0]}")
-            self._on_avatar_change(args[0], args[0] in self.forms)
+            id = cast(str, args[0])
+            self._on_avatar_change(id, id in self.forms)
+        elif address == "/avatar/eyeheight":
+            self.logger.info(f"{self.ip}:{self.listen_port} -> AVATAR HEIGHT: {args[0]}")
+            height = cast(float, args[0]) * self.eye_height_factor
+            self._on_height_change(height)
+            self.current_height = height
+        elif address == "/avatar/eyeheightmin":
+            self.logger.info(f"{self.ip}:{self.listen_port} -> WORLD: Height minimum: {args[0]}")
+            height = cast(float, args[0])
+            self.world_min_height = height
+        elif address == "/avatar/eyeheightmax":
+            self.logger.info(f"{self.ip}:{self.listen_port} -> WORLD: Height maximum: {args[0]}")
+            height = cast(float, args[0])
+            self.world_max_height = height
+        elif address == "/avatar/eyeheightscalingallowed":
+            self.logger.info(f"{self.ip}:{self.listen_port} -> WORLD: Scaling allowed: {args[0]}")
+            allowed = cast(bool, args[0])
+            self.world_allows_scaling = allowed
+        elif address.startswith("/usercamera"):
+            endpoint = address.removeprefix("/usercamera/")
+            self._on_camera_change(endpoint, args[0] if len(args) == 1 else args)
+            self.logger.info(f"{self.ip}:{self.listen_port} -> CAMERA: {endpoint}: {args}")
         else:
             self._on_unknown_message(address, args[0])
             self.logger.warning(f"{self.ip}:{self.listen_port} -> {address}: {args}")
@@ -264,11 +329,8 @@ class AV3Base():
                 self._set_defaults()
         self.on_avatar_reset()
 
-    def _on_height_change(self, parameter: str, value: OSCReturnable):
-        if not self.accurate_scale_polling:
-            if parameter in ("ScaleModified", "EyeHeightAsMeters", "ScaleFactorInverse", "EyeHeightAsPercent"):
-                return
-        self.on_height_change(parameter, value)
+    def _on_height_change(self, value: float):
+        self.on_height_change(value)
 
     def _on_parameter_change(self, parameter: str, value: OSCReturnable, custom: bool, set: bool = False):
         self.on_parameter_change(parameter, value, custom, set)
@@ -279,12 +341,17 @@ class AV3Base():
     def _on_viseme_change(self, viseme: Viseme):
         self.on_viseme_change(viseme)
 
+    def _on_camera_change(self, endpoint: str, value: OSCReturnable | tuple[OSCReturnable, ...]):
+        self.on_camera_change(endpoint, value)
+
     def _on_unknown_message(self, address: str, message: Atomic):
         self.on_unknown_message(address, message)
 
     def _on_update(self):
-        self._last_tick = time.time()
-        self.on_update()
+        now = time.time()
+        dt = now - self._last_tick
+        self._last_tick = now
+        self.on_update(dt)
 
     def _default_handler(self, address: str, *args: OSCReturnable):
         self.logger.warning(f"{self.ip}:{self.listen_port} -> DEFAULT {address}: {args}")
@@ -301,7 +368,11 @@ class AV3Base():
         self._server.service_actions = self._on_update
         self._server.serve_forever(self.MAX_SPEED)
 
-    def get_paramater_value(self, key: str) -> ParameterReturnValue:
+    def get_parameter_value(self, key: str) -> ParameterReturnValue:
+        """
+        Get the value of the parameter called `key`. Might return UNFETCHED
+        if the current state of the parameter is unknown.
+        """
         if key not in self.parameters and key not in self.custom_parameters:
             return UNFETCHED
         elif key in self.parameters:
@@ -319,11 +390,9 @@ class AV3Base():
         """Fires when an avatar is reset."""
         ...
 
-    def on_height_change(self, parameter: str, value: OSCReturnable) -> None:
-        """Fires when one of the ALL_SCALE_PARAMETER_NAMES messages is recieved.
-        Might (probably will) fire several times per height change, so filter as needed.
-        `parameter` is the parameter that triggered this event.
-        `value` is the value assigned to the parameter.
+    def on_height_change(self, value: float) -> None:
+        """Fires when a message on /avatar/eyeheight is recieved.
+        `value` is the value in meters, from 0.01 to 10,000.
         """
         ...
 
@@ -341,6 +410,10 @@ class AV3Base():
         """Fires when the avatar's viseme changes."""
         ...
 
+    def on_camera_change(self, endpoint: str, value: OSCReturnable | tuple[OSCReturnable, ...]) -> None:
+        """Fires when a setting on the user camera changes."""
+        ...
+
     def on_unknown_message(self, address: str, message: Atomic) -> None:
         """Fires when an unknown OSC message is recieved."""
         ...
@@ -349,6 +422,6 @@ class AV3Base():
         """Fires when the OSC server starts."""
         ...
 
-    def on_update(self):
+    def on_update(self, delta_time: Seconds):
         """Fires every tick. (~1/10s) Be careful!"""
         ...

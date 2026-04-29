@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "digiosc"
+version = "0.1.0"
+description = "A Python library for controlling VRChat avatars via OSC."
+authors = [
+    {name = "DigiDuncan", email = "digiduncan@gmail.com"}
+]
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+dependencies = [
+    "python-osc==1.9.3",
+    "appdirs==1.4.4",
+    "digiformatter==0.5.7.2",
+    "keyboard==0.13.5",
+    "mido[ports-rtmidi]==1.3.3",
+    "mouse==0.7.1",
+    "requests==2.32.3",
+    "XInput-Python==0.4.0",
+]
+
+[project.urls]
+homepage = "https://github.com/DigiDuncan/AV3"
+repository = "https://github.com/DigiDuncan/AV3"
