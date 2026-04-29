@@ -155,9 +155,9 @@ class AV3(AV3Base):
                 case 'note_off':
                     self._on_midi_off(msg['note'], msg['channel'])
                 case 'control_change':
-                    self._on_midi_control_change(msg['control'], msg['channel'])
+                    self._on_midi_control_change(msg['control'], msg['channel'], msg['value'])
                 case 'program_change':
-                    self._on_midi_control_change(msg['program'], msg['channel'])
+                    self._on_midi_program_change(msg['program'], msg['channel'])
                 case 'pitchwheel':
                     self._on_midi_pitchwheel(msg['pitch'], msg['channel'])
     
@@ -265,8 +265,8 @@ class AV3(AV3Base):
     def _on_midi_program_change(self, program: Program, channel: Channel):
         self.on_midi_program_change(program, channel)
 
-    def _on_midi_control_change(self, control: Program, channel: Channel):
-        self.on_midi_control_change(control, channel)
+    def _on_midi_control_change(self, control: Program, channel: Channel, value):
+        self.on_midi_control_change(control, channel, value)
 
     def _on_midi_pitchwheel(self, pitch: int, channel: Channel):
         self.on_midi_pitchwheel(pitch, channel)
@@ -379,7 +379,7 @@ class AV3(AV3Base):
         """Fired when a MIDI program changes."""
         ...
 
-    def on_midi_control_change(self, control: Program, channel: Channel):
+    def on_midi_control_change(self, control: Program, channel: Channel, value):
         """Fired when a MIDI control changes."""
         ...
 

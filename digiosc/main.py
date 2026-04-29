@@ -1,7 +1,6 @@
 from enum import IntEnum
 import random
 import logging
-import time
 
 from digiosc.av3.av3 import AV3
 from digiosc.lib.logging import setup_logging

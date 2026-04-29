@@ -8,6 +8,7 @@ from appdirs import user_data_dir
 from digiosc.lib.types import UNFETCHED, float6
 
 # !: There is zero way this works on *nix.
+# *: We also never use this.
 LOG_DIRECTORY = Path(user_data_dir("VRChat", "VRChat")).parent.parent.parent / "LocalLow" / "VRChat" / "VRChat"
 
 class Gesture(IntEnum):
