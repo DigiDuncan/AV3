@@ -87,6 +87,7 @@ class AV3Base():
 
         self._dispatcher = Dispatcher()
         self._dispatcher.map("/avatar/*", self._handle)
+        self._dispatcher.map("/usercamera/*", self._handle)
         self._dispatcher.set_default_handler(self._default_handler)
 
         self._client = OSCClient(ip, port)
@@ -311,8 +312,9 @@ class AV3Base():
             self.world_allows_scaling = allowed
         elif address.startswith("/usercamera"):
             endpoint = address.removeprefix("/usercamera/")
-            self._on_camera_change(endpoint, args[0] if len(args) == 1 else args)
-            self.logger.info(f"{self.ip}:{self.listen_port} -> CAMERA: {endpoint}: {args}")
+            a = args[0] if len(args) == 1 else args
+            self._on_camera_change(endpoint, a)
+            self.logger.info(f"{self.ip}:{self.listen_port} -> CAMERA: {endpoint}: {a}")
         else:
             self._on_unknown_message(address, args[0])
             self.logger.warning(f"{self.ip}:{self.listen_port} -> {address}: {args}")
