@@ -7,7 +7,7 @@ from pythonosc.dispatcher import Dispatcher
 from pythonosc.osc_server import BlockingOSCUDPServer
 
 from digiosc.lib.logging import setup_logging
-from digiosc.lib.types import IP, UNFETCHED, Atomic, OSCReturnable, ParameterReturnValue, Port, Position, Rotation, Seconds, UnfetchedType, Velocity
+from digiosc.lib.types import IP, UNFETCHED, Atomic, OSCReturnable, ParameterReturnValue, Port, Position, Rotation, Seconds, UnfetchedType, Velocity, float6
 from digiosc.lib.vrchat import AvatarParameters, Gesture, Tracker, TrackingType, Viseme, create_default_parameters_dict, get_default_parameter_names
 from digiosc.osc import OSCClient
 
@@ -88,6 +88,8 @@ class AV3Base():
         self._dispatcher = Dispatcher()
         self._dispatcher.map("/avatar/*", self._handle)
         self._dispatcher.map("/usercamera/*", self._handle)
+        self._dispatcher.map("/tracking/*", self._handle)
+        self._dispatcher.map("/dolly/*", self._handle)
         self._dispatcher.set_default_handler(self._default_handler)
 
         self._client = OSCClient(ip, port)
@@ -315,6 +317,18 @@ class AV3Base():
             a = args[0] if len(args) == 1 else args
             self._on_camera_change(endpoint, a)
             self.logger.info(f"{self.ip}:{self.listen_port} -> CAMERA: {endpoint}: {a}")
+        elif address.startswith("/tracking/vrsystem/"):
+            endpoint = address.removeprefix("/tracking/vrsystem/").removesuffix("/pose")
+            pose = cast(float6, args)
+            self._on_tracking_change(endpoint, pose)
+            if self.verbose:
+                self.logger.info(f"{self.ip}:{self.listen_port} -> TRACKING: {endpoint}: {pose}")
+        elif address.startswith("/dolly/Play"):
+            if args[0]:
+                self._on_dolly_start()
+            else:
+                self._on_dolly_stop()
+            self.logger.info(f"{self.ip}:{self.listen_port} -> DOLLY: Playing: {args[0]}")
         else:
             self._on_unknown_message(address, args[0])
             self.logger.warning(f"{self.ip}:{self.listen_port} -> {address}: {args}")
@@ -345,6 +359,15 @@ class AV3Base():
 
     def _on_camera_change(self, endpoint: str, value: OSCReturnable | tuple[OSCReturnable, ...]):
         self.on_camera_change(endpoint, value)
+
+    def _on_tracking_change(self, address: str, value: float6):
+        self.on_tracking_change(address, value)
+
+    def _on_dolly_start(self):
+        self.on_dolly_start()
+
+    def _on_dolly_stop(self):
+        self.on_dolly_stop()
 
     def _on_unknown_message(self, address: str, message: Atomic):
         self.on_unknown_message(address, message)
@@ -414,6 +437,18 @@ class AV3Base():
 
     def on_camera_change(self, endpoint: str, value: OSCReturnable | tuple[OSCReturnable, ...]) -> None:
         """Fires when a setting on the user camera changes."""
+        ...
+
+    def on_tracking_change(self, address: str, value: float6) -> None:
+        """Fires when the VR system moves in some way."""
+        ...
+
+    def on_dolly_start(self) -> None:
+        """Fires when the camera dolly begins animating."""
+        ...
+
+    def on_dolly_stop(self) -> None:
+        """Fires when the camera dolly ends animating."""
         ...
 
     def on_unknown_message(self, address: str, message: Atomic) -> None:

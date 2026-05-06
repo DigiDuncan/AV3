@@ -254,14 +254,6 @@ class DigiAV3(AV3):
                 self.set_bool("Charm/Right", True)
         if key == "=":
             print(self.custom_parameters)
-        elif key == "]":
-            self.set_bool("HeightOSC/SlowUp", True)
-        elif key == "[":
-            self.set_bool("HeightOSC/SlowDown", True)
-        elif key == ",":
-            self.set_bool("HeightOSC/Down", True)
-        elif key == ".":
-            self.set_bool("HeightOSC/Up", True)
 
     def on_key_release(self, key: str):
         if self.get_parameter_value("Charm/AllowKeyboard"):
@@ -273,14 +265,6 @@ class DigiAV3(AV3):
                 self.set_bool("Charm/Up", False)
             elif key == "k":
                 self.set_bool("Charm/Right", False)
-        if key == "]":
-            self.set_bool("HeightOSC/SlowUp", False)
-        elif key == "[":
-            self.set_bool("HeightOSC/SlowDown", False)
-        elif key == ",":
-            self.set_bool("HeightOSC/Down", False)
-        elif key == ".":
-            self.set_bool("HeightOSC/Up", False)
 def main():
     setup_logging("digiosc")
     avatar = DigiAV3()
