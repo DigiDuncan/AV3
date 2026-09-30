@@ -1,9 +1,11 @@
 from enum import IntEnum
-import random
 import logging
+
+import pygetwindow
 
 from digiosc.av3.av3 import AV3
 from digiosc.lib.logging import setup_logging
+from digiosc.lib.midi import Channel
 from digiosc.lib.types import ParameterReturnValue, Seconds
 
 logger = logging.getLogger("digiosc")
@@ -89,16 +91,14 @@ class DigiAV3(AV3):
         super().__init__(ip, port, listen_port, default_id = 'avtr_5c0e1c16-38ef-4c1d-b8c3-a627c47b07bf',
                          eye_height_factor = 1.11 / 0.98,
                          assume_base_state = True,
-                         parameter_prefix_blacklist = ("Go/", "VF", "CheeseSync", "Cam", "Gesture"),
+                         parameter_prefix_blacklist = ("Go/", "VF", "CheeseSync", "Cam", "Gesture", "VRCL"),
                          verbose = False)
 
         self.last_shown_height: Seconds = -1
         self.height_show_time = 3.0
-        self.last_break = 0.0
 
         self.scale = 1
         self.force_show = False
-        self.broken = False
 
         self.last_height_tick: Seconds = -1
 
@@ -158,8 +158,6 @@ class DigiAV3(AV3):
         self.on_height_change(None)
 
     def on_height_change(self, value: ParameterReturnValue | None):
-        if self.broken:
-            return
         if not value:
             self._set_digits(ALL_DASHES)
             return
@@ -208,41 +206,46 @@ class DigiAV3(AV3):
                 self.set_bool("Height/Show", True)
             else:
                 self.set_bool("Height/Show", False)
-        elif parameter == "Height/Break":
-            self.broken = value
-            if not self.broken:
-                self.on_height_change(None)
         elif parameter == "HeightOSC/Reset" and value:
             self.set_height(1.11)
         elif parameter == "HeightOSC/Up" and value:
-            speed = SPEEDS[self.get_parameter_value("HeightOSC/Speed")]
-            self.set_height(self.current_height + speed)
+            speed_val: Speed = self.get_parameter_value("HeightOSC/Speed")
+            if speed_val:
+                speed = SPEEDS[speed_val]
+                self.set_height(self.current_height + speed)
         elif parameter == "HeightOSC/Down" and value:
-            speed = SPEEDS[self.get_parameter_value("HeightOSC/Speed")]
-            self.set_height(self.current_height - speed)
+            speed_val: Speed = self.get_parameter_value("HeightOSC/Speed")
+            if speed_val:
+                speed = SPEEDS[speed_val]
+                self.set_height(self.current_height - speed)
         elif parameter == "HeightOSC/SlowUp" or parameter == "HeightOSC/SlowDown":
             self.last_height_tick = self.clock
 
     def on_update(self, delta_time: Seconds):
-        if (self.clock - self.last_shown_height > self.height_show_time) and not self.force_show and self.get_parameter_value("Height/Show") is True:
-            self.set_bool("Height/Show", False)
-        if self.broken:
-            if self.last_break + self.MAX_SPEED < self.clock:
-                self._set_digits(random.randrange(0, 999))
-                self.last_break = self.clock
+        if (self.clock - self.last_shown_height > self.height_show_time) and not self.force_show:
+            if self.custom_parameters["Height/Show"]:
+                self.set_bool("Height/Show", False)
 
         # HeightOSC
         if (self.last_height_tick + self.MAX_SPEED < self.clock) and self.current_height:
             dt = self.clock - self.last_height_tick
-            speed = SPEEDS[self.get_parameter_value("HeightOSC/Speed")]
-            if self.get_parameter_value("HeightOSC/SlowUp"):
-                self.set_height(self.current_height + (speed * dt))
-                self.last_height_tick = self.clock
-            elif self.get_parameter_value("HeightOSC/SlowDown"):
-                self.set_height(self.current_height - (speed * dt))
-                self.last_height_tick = self.clock
+            speed_val: Speed = self.get_parameter_value("HeightOSC/Speed")
+            if speed_val:
+                speed = SPEEDS[speed_val]
+                if self.get_parameter_value("HeightOSC/SlowUp"):
+                    self.set_height(self.current_height + (speed * dt))
+                    self.last_height_tick = self.clock
+                elif self.get_parameter_value("HeightOSC/SlowDown"):
+                    self.set_height(self.current_height - (speed * dt))
+                    self.last_height_tick = self.clock
 
     def on_key_press(self, key: str):
+        if not self.vrchat_focused:
+            return
+
+        speed_val: Speed = self.get_parameter_value("HeightOSC/Speed")
+        speed = SPEEDS[speed_val] if speed_val else None
+
         if self.get_parameter_value("Charm/AllowKeyboard"):
             if key == "d":
                 self.set_bool("Charm/Left", True)
@@ -252,10 +255,24 @@ class DigiAV3(AV3):
                 self.set_bool("Charm/Up", True)
             elif key == "k":
                 self.set_bool("Charm/Right", True)
-        if key == "=":
+        elif key == "=":
             print(self.custom_parameters)
+        elif key == ";":
+            self.set_height(1.00)
+        elif key == "n":
+            self.set_height(0.20)
+        elif key == "m":
+            self.set_height(0.01)
+        if speed and self.current_height:
+            if key == "+":
+                self.set_height(self.current_height + speed)
+            elif key == "+":
+                self.set_height(self.current_height - speed)
 
     def on_key_release(self, key: str):
+        if not self.vrchat_focused:
+            return
+
         if self.get_parameter_value("Charm/AllowKeyboard"):
             if key == "d":
                 self.set_bool("Charm/Left", False)
@@ -265,6 +282,19 @@ class DigiAV3(AV3):
                 self.set_bool("Charm/Up", False)
             elif key == "k":
                 self.set_bool("Charm/Right", False)
+
+    def on_midi_on(self, note: int, velocity: int, channel: int):
+        print("NOTE", note, velocity, channel)
+
+    def on_midi_control_change(self, control: Channel, channel: Channel, value):
+        print("CONTROL", control, channel, value)
+
+    def on_midi_program_change(self, program: Channel, channel: Channel):
+        print("PROGRAM", program, channel)
+
+    def on_midi_pitchwheel(self, pitch: int, channel: Channel):
+        print("WHEEL", pitch, channel)
+
 def main():
     setup_logging("digiosc")
     avatar = DigiAV3()

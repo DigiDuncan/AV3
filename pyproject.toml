@@ -11,7 +11,7 @@ authors = [
 ]
 readme = "README.md"
 license = {text = "MIT"}
-requires-python = ">=3.10"
+requires-python = ">=3.13"
 dependencies = [
     "python-osc==1.9.3",
     "appdirs==1.4.4",
@@ -21,6 +21,8 @@ dependencies = [
     "mouse==0.7.1",
     "requests==2.32.3",
     "XInput-Python==0.4.0",
+    "pyautogui==0.9.54",
+    "pygetwindow==0.0.9"
 ]
 
 [project.urls]

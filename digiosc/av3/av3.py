@@ -45,11 +45,11 @@ class AV3(AV3Base):
                  custom_parameters = None,
                  assume_base_state = True,
                  parameter_prefix_blacklist = None,
-                 round_floats_to = 3, 
+                 round_floats_to = 3,
                  verbose = False):
         """
         Represents an avatar you can send parameter controls to with OSC, and recieve data from and about.
-        
+
         Has additional functions for interfacing with various input devices.
         - `ip`: The IP to listen/send on.
         - `port`: The sending port.
@@ -120,7 +120,7 @@ class AV3(AV3Base):
                          parameter_prefix_blacklist = parameter_prefix_blacklist,
                          round_floats_to = round_floats_to,
                          verbose = verbose)
-        
+
     def _keyboard_hook(self, event: keyboard.KeyboardEvent):
         if event.event_type == keyboard.KEY_DOWN:
             self._on_key_press(event.name)
@@ -149,18 +149,18 @@ class AV3(AV3Base):
                 self._warned_about_midi = True
             return
         for msg in self._midi_port.iter_pending():
-            match msg['type']:
+            match msg.type:
                 case 'note_on':
-                    self._on_midi_on(msg['note'], msg['velocity'], msg['channel'])
+                    self._on_midi_on(msg.note, msg.velocity, msg.channel)
                 case 'note_off':
-                    self._on_midi_off(msg['note'], msg['channel'])
+                    self._on_midi_off(msg.note, msg.channel)
                 case 'control_change':
-                    self._on_midi_control_change(msg['control'], msg['channel'], msg['value'])
+                    self._on_midi_control_change(msg.control, msg.channel, msg.value)
                 case 'program_change':
-                    self._on_midi_program_change(msg['program'], msg['channel'])
+                    self._on_midi_program_change(msg.program, msg.channel)
                 case 'pitchwheel':
-                    self._on_midi_pitchwheel(msg['pitch'], msg['channel'])
-    
+                    self._on_midi_pitchwheel(msg.pitch, msg.channel)
+
     def _handle_controller(self):
         events = XInput.get_events()
         for e in events:
@@ -234,10 +234,10 @@ class AV3(AV3Base):
             self._on_url_changed(url, contents)
 
     ### PRIVATE VERSIONS OF EVENTS
-            
+
     def _on_key_press(self, key: str):
         self.on_key_press(key)
-    
+
     def _on_key_release(self, key: str):
         self.on_key_release(key)
 
@@ -246,7 +246,7 @@ class AV3(AV3Base):
 
     def _on_mouse_release(self, button: MouseButton):
         self.on_mouse_release(button)
-    
+
     def _on_mouse_double_click(self, button: MouseButton):
         self.on_mouse_double_click(button)
 
@@ -258,7 +258,7 @@ class AV3(AV3Base):
 
     def _on_midi_on(self, note: Note, velocity: int, channel: Channel):
         self.on_midi_on(note, velocity, channel)
-    
+
     def _on_midi_off(self, note: Note, channel: Channel):
         self.on_midi_off(note, channel)
 
@@ -354,7 +354,7 @@ class AV3(AV3Base):
     def on_mouse_release(self, button: MouseButton):
         """Fires when a mouse button is released."""
         ...
-    
+
     def on_mouse_double_click(self, button: MouseButton):
         """Fires when a mouse button is double-clicked."""
         ...
@@ -370,7 +370,7 @@ class AV3(AV3Base):
     def on_midi_on(self, note: Note, velocity: int, channel: Channel):
         """Fires when a MIDI note is played."""
         ...
-    
+
     def on_midi_off(self, note: Note, channel: Channel):
         """Fired when a MIDI note is no longer playing."""
         ...
@@ -402,7 +402,7 @@ class AV3(AV3Base):
     def on_trigger(self, trigger: LeftOrRight, value: int, controller_id: int):
         """Fired when a controller trigger is pressed."""
         ...
-    
+
     def on_file_changed(self, path: Path, contents: Any):
         """Fired when the contents of a file change.
         Requires the file path be added via `add_file_handler()`.

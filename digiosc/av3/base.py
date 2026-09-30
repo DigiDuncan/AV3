@@ -3,12 +3,13 @@ import time
 from typing import Iterable, cast
 
 from colored import style
+import pygetwindow
 from pythonosc.dispatcher import Dispatcher
 from pythonosc.osc_server import BlockingOSCUDPServer
 
 from digiosc.lib.logging import setup_logging
 from digiosc.lib.types import IP, UNFETCHED, Atomic, OSCReturnable, ParameterReturnValue, Port, Position, Rotation, Seconds, UnfetchedType, Velocity, float6
-from digiosc.lib.vrchat import AvatarParameters, Gesture, Tracker, TrackingType, Viseme, create_default_parameters_dict, get_default_parameter_names
+from digiosc.lib.vrchat import AvatarParameters, Axis, Button, Gesture, Tracker, TrackingType, Viseme, create_default_parameters_dict, get_default_parameter_names
 from digiosc.osc import OSCClient
 
 
@@ -106,7 +107,7 @@ class AV3Base():
 
         self.forms = () if forms is None else tuple(forms)
         self.forms = set((default_id,) + tuple(self.forms)) if default_id else set(self.forms)
-        
+
         self.logger = logging.getLogger("avatar")
         setup_logging("avatar", logging.INFO, True)
 
@@ -118,7 +119,13 @@ class AV3Base():
     @property
     def clock(self) -> float:
         return self._last_tick - self._start_time
-    
+
+    @property
+    def vrchat_focused(self) -> bool:
+        current_window = pygetwindow.getActiveWindow()
+        # This is technically fragile? I hope this doesn't change.
+        return current_window is not None and current_window.title == "VRChat"
+
     def _set_defaults(self):
         self.parameters["Viseme"] = Viseme.SIL
         self.parameters["VelocityMagnitude"] = 0.0
@@ -176,12 +183,17 @@ class AV3Base():
         self._update_parameter(parameter, value)
         self.logger.info(f"{self.ip}:{self.port} <- {parameter}: {value}")
 
-    def control_button(self, button: str):
+    def control_button(self, button: Button):
         """Sends a controller input to VRChat."""
         self._client.send_button("/input/" + button)
         self.logger.info(f"{self.ip}:{self.port} <- BUTTON: {button}")
 
-    def control_joystick(self, axis: str, value: float):
+    def panic(self):
+        """Sends a panic input to VRChat, enabling Safe Mode."""
+        self._client.send_button("/input/PanicButton")
+        self.logger.info(f"{self.ip}:{self.port} <- PANIC")
+
+    def control_joystick(self, axis: Axis, value: float):
         """Sends a controller joystick input to VRChat."""
         self._client.send_float("/input/" + axis, value)
         self.logger.info(f"{self.ip}:{self.port} <- JOYSTICK/{axis}: {value}")
@@ -205,7 +217,7 @@ class AV3Base():
         """
         Set the avatar's current height. If `bypass_factor` is True, doesn't account for model height
         and sets eye height directly.
-        VRChat's allowed range is [0.01-10000], and this function will clamp to those values. 
+        VRChat's allowed range is [0.01-10000], and this function will clamp to those values.
         """
         if not bypass_factor:
             height /= self.eye_height_factor
@@ -278,7 +290,7 @@ class AV3Base():
                     if self.parameters["VelocityX"] is not UNFETCHED and self.parameters["VelocityY"] is not UNFETCHED and self.parameters["VelocityZ"] is not UNFETCHED:
                         self._on_velocity_change((self.parameters["VelocityX"], self.parameters["VelocityY"], self.parameters["VelocityZ"]))
                 if endpoint == "Viseme":
-                    self._on_viseme_change(Viseme(self.parameters["Viseme"]))
+                    self._on_viseme_change(self.parameters["Viseme"])
                 if endpoint == "TrackingType":
                     if self._tracking_type == TrackingType.AV2_HANDS_ONLY and arg != TrackingType.AV2_HANDS_ONLY:
                         self._on_avatar_reset()
@@ -354,7 +366,7 @@ class AV3Base():
     def _on_velocity_change(self, velocity: Velocity):
         self.on_velocity_change(velocity)
 
-    def _on_viseme_change(self, viseme: Viseme):
+    def _on_viseme_change(self, viseme: Viseme | int):
         self.on_viseme_change(viseme)
 
     def _on_camera_change(self, endpoint: str, value: OSCReturnable | tuple[OSCReturnable, ...]):
@@ -431,7 +443,7 @@ class AV3Base():
         """Fires when the avatar's velocity changes."""
         ...
 
-    def on_viseme_change(self, viseme: Viseme) -> None:
+    def on_viseme_change(self, viseme: Viseme | int) -> None:
         """Fires when the avatar's viseme changes."""
         ...
 

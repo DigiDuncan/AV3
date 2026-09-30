@@ -1,15 +1,8 @@
 from dataclasses import dataclass
-from enum import IntEnum
-from pathlib import Path
+from enum import IntEnum, StrEnum
 from typing import Literal, TypedDict, cast, get_type_hints
 
-from appdirs import user_data_dir
-
 from digiosc.lib.types import UNFETCHED, float6
-
-# !: There is zero way this works on *nix.
-# *: We also never use this.
-LOG_DIRECTORY = Path(user_data_dir("VRChat", "VRChat")).parent.parent.parent / "LocalLow" / "VRChat" / "VRChat"
 
 class Gesture(IntEnum):
     NEUTRAL = 0
@@ -171,3 +164,49 @@ CAMERA_SLIDERS: dict[str, CameraSlider] = {
     "PhotoRate": CameraSlider("PhotoRate", 1, 0.1, 2),
     "Duration": CameraSlider("Duration", 2, 0.1, 60)
 }
+
+class Axis(StrEnum):
+    HORIZONTAL = "Horizontal"
+    VERTICAL = "Vertical"
+    LOOK_HORIZONTAL = "LookHorizontal"
+    LOOK_VERTICAL = "LookVertical"
+    SPIN_HOLD_CW_CCW = "SpinHoldCwCcw"
+    SPIN_HOLD_UD = "SpinHoldUD"
+    SPIN_HOLD_LR = "SpinHoldLR"
+    MOVE_HOLD_FB = "MoveHoldFB"
+    USE_AXIS_RIGHT = "UseAxisRight"
+    GRAB_AXIS_RIGHT = "GrabAxisRight"
+
+class Button(StrEnum):
+    MOVE_FORWARD = "MoveForward"
+    MOVE_BACKWARD = "MoveBackward"
+    MOVE_LEFT = "MoveLeft"
+    MOVE_RIGHT = "MoveRight"
+    LOOK_LEFT = "LookLeft"
+    LOOK_RIGHT = "LookRight"
+    JUMP = "Jump"
+    RUN = "Run"
+    COMFORT_LEFT = "ComfortLeft"
+    COMFORT_RIGHT = "ComfortRight"
+    GRAB_RIGHT = "GrabRight"
+    USE_RIGHT = "UseRight"
+    DROP_RIGHT = "DropRight"
+    GRAB_LEFT = "GrabLeft"
+    USE_LEFT = "UseLeft"
+    DROP_LEFT = "DropLeft"
+    PANIC_BUTTON = "PanicButton"
+    QUICK_MENU_TOGGLE_LEFT = "QuickMenuToggleLeft"
+    QUICK_MENU_TOGGLE_RIGHT = "QuickMenuToggleRight"
+    TOGGLE_SIT_STAND = "ToggleSitStand"
+    AFK_TOGGLE = "AFKToggle"
+    BOICE = "Voice"
+    SHOW_DEBUG_INFO_0 = DEBUG_UI_SHAPES = "ShowDebugInfo0"
+    SHOW_DEBUG_INFO_1 = DEBUG_ASSET_BUNDLES = "ShowDebugInfo1"
+    SHOW_DEBUG_INFO_2 = DEBUG_FPS_BUILD = "ShowDebugInfo2"
+    SHOW_DEBUG_INFO_3 = DEBUG_LOG = "ShowDebugInfo3"
+    SHOW_DEBUG_INFO_4 = DEBUG_USER_STATS = "ShowDebugInfo4"
+    SHOW_DEBUG_INFO_5 = DEBUG_NETWORKING = "ShowDebugInfo5"
+    SHOW_DEBUG_INFO_6 = DEBUG_NETWORKED_OBJECTS = "ShowDebugInfo6"
+    SHOW_DEBUG_INFO_7 = DEBUG_PHYSBONES = "ShowDebugInfo7"
+    SHOW_DEBUG_INFO_8 = DEBUG_SYNCED_OBJECTS = "ShowDebugInfo8"
+    SHOW_DEBUG_INFO_9 = DEBUG_PLAYERS = "ShowDebugInfo9"
