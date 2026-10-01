@@ -5,6 +5,7 @@ IP = str
 Port = int
 Seconds = float
 URL = str
+LeftOrRight = Literal["left", "right"]
 
 OSCReturnable = float | int | bool
 Atomic = float | int | str | bool

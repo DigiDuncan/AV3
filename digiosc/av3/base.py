@@ -8,7 +8,7 @@ from pythonosc.dispatcher import Dispatcher
 from pythonosc.osc_server import BlockingOSCUDPServer
 
 from digiosc.lib.logging import setup_logging
-from digiosc.lib.types import IP, UNFETCHED, Atomic, OSCReturnable, ParameterReturnValue, Port, Position, Rotation, Seconds, UnfetchedType, Velocity, float6
+from digiosc.lib.types import IP, UNFETCHED, Atomic, LeftOrRight, OSCReturnable, ParameterReturnValue, Port, Position, Rotation, Seconds, UnfetchedType, Velocity, float6
 from digiosc.lib.vrchat import AvatarParameters, Axis, Button, Gesture, Tracker, TrackingType, Viseme, create_default_parameters_dict, get_default_parameter_names
 from digiosc.osc import OSCClient
 
@@ -291,6 +291,8 @@ class AV3Base():
                         self._on_velocity_change((self.parameters["VelocityX"], self.parameters["VelocityY"], self.parameters["VelocityZ"]))
                 if endpoint == "Viseme":
                     self._on_viseme_change(self.parameters["Viseme"])
+                if endpoint == "GestureLeft" or endpoint == "GestureRight":
+                    self._on_gesture(self.parameters[endpoint], "left" if endpoint == "GestureLeft" else "right")
                 if endpoint == "TrackingType":
                     if self._tracking_type == TrackingType.AV2_HANDS_ONLY and arg != TrackingType.AV2_HANDS_ONLY:
                         self._on_avatar_reset()
@@ -369,6 +371,9 @@ class AV3Base():
     def _on_viseme_change(self, viseme: Viseme | int):
         self.on_viseme_change(viseme)
 
+    def _on_gesture(self, gesture: Gesture, hand: LeftOrRight):
+        self.on_gesture(gesture, hand)
+
     def _on_camera_change(self, endpoint: str, value: OSCReturnable | tuple[OSCReturnable, ...]):
         self.on_camera_change(endpoint, value)
 
@@ -444,7 +449,15 @@ class AV3Base():
         ...
 
     def on_viseme_change(self, viseme: Viseme | int) -> None:
-        """Fires when the avatar's viseme changes."""
+        """Fires when the avatar's viseme changes.
+        Will be 0-14 (or an instance of Viseme) when lipsync is enabled on the avatar,
+        otherwise will be 0-100 when Jawflap is in use. There is no way to determine this
+        automatically.
+        """
+        ...
+
+    def on_gesture(self, gesture: Gesture, hand: LeftOrRight) -> None:
+        """Fires when the avatar performs a gesture."""
         ...
 
     def on_camera_change(self, endpoint: str, value: OSCReturnable | tuple[OSCReturnable, ...]) -> None:

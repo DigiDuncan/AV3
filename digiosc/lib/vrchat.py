@@ -199,7 +199,7 @@ class Button(StrEnum):
     QUICK_MENU_TOGGLE_RIGHT = "QuickMenuToggleRight"
     TOGGLE_SIT_STAND = "ToggleSitStand"
     AFK_TOGGLE = "AFKToggle"
-    BOICE = "Voice"
+    VOICE = "Voice"
     SHOW_DEBUG_INFO_0 = DEBUG_UI_SHAPES = "ShowDebugInfo0"
     SHOW_DEBUG_INFO_1 = DEBUG_ASSET_BUNDLES = "ShowDebugInfo1"
     SHOW_DEBUG_INFO_2 = DEBUG_FPS_BUILD = "ShowDebugInfo2"

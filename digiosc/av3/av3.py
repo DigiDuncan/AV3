@@ -14,12 +14,11 @@ import XInput
 
 from digiosc.av3.base import AV3Base
 from digiosc.lib.midi import Channel, MIDIPort, Note, Program
-from digiosc.lib.types import URL, Seconds
+from digiosc.lib.types import URL, LeftOrRight, Seconds
 from digiosc.lib.xinput import BUTTON_NAMES, Button
 
 MouseButton = Literal['left', 'middle', 'right', 'x', 'x2']
 MouseEventType = Literal['down', 'up', 'double']
-LeftOrRight = Literal['left', 'right']
 StringProcessor = Callable[[str], Any]
 DictProcessor = Callable[[dict], Any]
 
