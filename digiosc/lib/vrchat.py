@@ -93,6 +93,9 @@ class AvatarParameters(TypedDict):
     EyeHeightAsMeters: float
     EyeHeightAsPercent: float
 
+    UserEyeTracking: bool
+    UserFaceTracking: bool
+
 def create_default_parameters_dict() -> AvatarParameters:
     r = {}
     for k in get_type_hints(AvatarParameters).keys():
@@ -210,3 +213,108 @@ class Button(StrEnum):
     SHOW_DEBUG_INFO_7 = DEBUG_PHYSBONES = "ShowDebugInfo7"
     SHOW_DEBUG_INFO_8 = DEBUG_SYNCED_OBJECTS = "ShowDebugInfo8"
     SHOW_DEBUG_INFO_9 = DEBUG_PLAYERS = "ShowDebugInfo9"
+
+@dataclass
+class FullFaceTrackingPayload:
+    EyeLookOutRight: float
+    EyeLookInRight: float
+    EyeLookUpRight: float
+    EyeLookDownRight: float
+    EyeLookOutLeft: float
+    EyeLookInLeft: float
+    EyeLookUpLeft: float
+    EyeLookDownLeft: float
+    EyeClosedRight: float
+    EyeClosedLeft: float
+    EyeDilationRight: float
+    EyeDilationLeft: float
+    EyeConstrictRight: float
+    EyeConstrictLeft: float
+    EyeSquintRight: float
+    EyeSquintLeft: float
+    EyeWideRight: float
+    EyeWideLeft: float
+    BrowPinchRight: float
+    BrowPinchLeft: float
+    BrowLowererRight: float
+    BrowLowererLeft: float
+    BrowInnerUpRight: float
+    BrowInnerUpLeft: float
+    BrowOuterUpRight: float
+    BrowOuterUpLeft: float
+    NasalDilationRight: float
+    NasalDilationLeft: float
+    NasalConstrictRight: float
+    NasalConstrictLeft: float
+    CheekSquintRight: float
+    CheekSquintLeft: float
+    CheekPuffRight: float
+    CheekPuffLeft: float
+    CheekSuckRight: float
+    CheekSuckLeft: float
+    JawOpen: float
+    JawRight: float
+    JawLeft: float
+    JawForward: float
+    JawBackward: float
+    JawClench: float
+    JawMandibleRaise: float
+    MouthClosed: float
+    LipSuckUpperRight: float
+    LipSuckUpperLeft: float
+    LipSuckLowerRight: float
+    LipSuckLowerLeft: float
+    LipSuckCornerRight: float
+    LipSuckCornerLeft: float
+    LipFunnelUpperRight: float
+    LipFunnelUpperLeft: float
+    LipFunnelLowerRight: float
+    LipFunnelLowerLeft: float
+    LipPuckerUpperRight: float
+    LipPuckerUpperLeft: float
+    LipPuckerLowerRight: float
+    LipPuckerLowerLeft: float
+    MouthUpperUpRight: float
+    MouthUpperUpLeft: float
+    MouthUpperDeepenRight: float
+    MouthUpperDeepenLeft: float
+    NoseSneerRight: float
+    NoseSneerLeft: float
+    MouthLowerDownRight: float
+    MouthLowerDownLeft: float
+    MouthUpperRight: float
+    MouthUpperLeft: float
+    MouthLowerRight: float
+    MouthLowerLeft: float
+    MouthCornerPullRight: float
+    MouthCornerPullLeft: float
+    MouthCornerSlantRight: float
+    MouthCornerSlantLeft: float
+    MouthFrownRight: float
+    MouthFrownLeft: float
+    MouthStretchRight: float
+    MouthStretchLeft: float
+    MouthDimpleRight: float
+    MouthDimpleLeft: float
+    MouthRaiserUpper: float
+    MouthRaiserLower: float
+    MouthPressRight: float
+    MouthPressLeft: float
+    MouthTightenerRight: float
+    MouthTightenerLeft: float
+    TongueOut: float
+    TongueUp: float
+    TongueDown: float
+    TongueRight: float
+    TongueLeft: float
+    TongueRoll: float
+    TongueBendDown: float
+    TongueCurlUp: float
+    TongueSquish: float
+    TongueFlat: float
+    TongueTwistRight: float
+    TongueTwistLeft: float
+    SoftPalateClose: float
+    ThroatSwallow: float
+    NeckFlexRight: float
+    NeckFlexLeft: float

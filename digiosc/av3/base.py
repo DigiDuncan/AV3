@@ -97,6 +97,8 @@ class AV3Base():
         self._server = BlockingOSCUDPServer((ip, listen_port), self._dispatcher)
 
         self.current_avatar_id = default_id
+        self.current_avatar_supports_full_face_tracking: bool = False
+        self.current_avatar_name: str = ""
 
         self.current_height: float | UnfetchedType = UNFETCHED
         self.eye_height_factor = eye_height_factor
@@ -306,9 +308,17 @@ class AV3Base():
             if endpoint in self._just_set:
                 self._just_set.remove(endpoint)
         elif address == "/avatar/change":
-            self.logger.info(f"{self.ip}:{self.listen_port} -> AVATAR CHANGE: {args[0]}")
+            self.logger.info(f"{style.DIM}{self.ip}:{self.listen_port} -> AVATAR CHANGE ID: {args[0]}")
             id = cast(str, args[0])
-            self._on_avatar_change(id, id in self.forms)
+            self.current_avatar_id = id
+        elif address == "/avatar/avatarfullfacetracking":
+            self.logger.info(f"{style.DIM}{self.ip}:{self.listen_port} -> AVATAR CHANGE FACE TRACKING: {args[0]}")
+            fft = cast(bool, args[0])
+            self.current_avatar_supports_full_face_tracking = fft
+        elif address == "/avatar/name":
+            self.logger.info(f"{self.ip}:{self.listen_port} -> AVATAR CHANGE: {self.current_avatar_id} ({args[0]})")
+            name = cast(str, args[0])
+            self._on_avatar_change(self.current_avatar_id, name, self.current_avatar_supports_full_face_tracking, self.current_avatar_id in self.forms)
         elif address == "/avatar/eyeheight":
             self.logger.info(f"{self.ip}:{self.listen_port} -> AVATAR HEIGHT: {args[0]}")
             height = cast(float, args[0]) * self.eye_height_factor
@@ -330,7 +340,10 @@ class AV3Base():
             endpoint = address.removeprefix("/usercamera/")
             a = args[0] if len(args) == 1 else args
             self._on_camera_change(endpoint, a)
-            self.logger.info(f"{self.ip}:{self.listen_port} -> CAMERA: {endpoint}: {a}")
+            if endpoint == "Pose" and self.verbose:
+                self.logger.info(f"{self.ip}:{self.listen_port} -> CAMERA: {endpoint}: {a}")
+            else:
+                self.logger.info(f"{self.ip}:{self.listen_port} -> CAMERA: {endpoint}: {a}")
         elif address.startswith("/tracking/vrsystem/"):
             endpoint = address.removeprefix("/tracking/vrsystem/").removesuffix("/pose")
             pose = cast(float6, args)
@@ -347,11 +360,11 @@ class AV3Base():
             self._on_unknown_message(address, args[0])
             self.logger.warning(f"{self.ip}:{self.listen_port} -> {address}: {args}")
 
-    def _on_avatar_change(self, id: str, is_form: bool):
+    def _on_avatar_change(self, id: str, name: str, supports_full_face_tracking: bool, is_form: bool):
         self.current_avatar_id = id
         if self.assume_base_state:
             self._set_defaults()
-        self.on_avatar_change(id, is_form)
+        self.on_avatar_change(id, name, supports_full_face_tracking, is_form)
 
     def _on_avatar_reset(self):
         if self.current_avatar_id in self.forms:
@@ -424,7 +437,7 @@ class AV3Base():
         return UNFETCHED
 
     # EVENTS
-    def on_avatar_change(self, id: str, is_form: bool) -> None:
+    def on_avatar_change(self, id: str, name: str, supports_full_face_tracking: bool, is_form: bool) -> None:
         """Fires when a new avatar is loaded. `is_form` is True if the new avatar is in the `forms` list."""
         ...
 

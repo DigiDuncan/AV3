@@ -1,8 +1,6 @@
 from enum import IntEnum
 import logging
 
-import pygetwindow
-
 from digiosc.av3.av3 import AV3
 from digiosc.lib.logging import setup_logging
 from digiosc.lib.midi import Channel
@@ -101,6 +99,9 @@ class DigiAV3(AV3):
         self.force_show = False
 
         self.last_height_tick: Seconds = -1
+        self.last_boop_time: Seconds = float("-inf")
+
+        self.boop_duration = 3
 
     def on_start(self):
         self.set_int("Height/Unit", CENTIMETERS)
@@ -146,7 +147,7 @@ class DigiAV3(AV3):
             self.set_bool("Height/DotA", True)
             self.set_bool("Height/DotB", False)
 
-    def on_avatar_change(self, id, is_form):
+    def on_avatar_change(self, id, name, fft, is_form):
         self.force_show = False
         if is_form:
             logger.info("Avatar was changed to a form!")
@@ -220,6 +221,8 @@ class DigiAV3(AV3):
                 self.set_height(self.current_height - speed)
         elif parameter == "HeightOSC/SlowUp" or parameter == "HeightOSC/SlowDown":
             self.last_height_tick = self.clock
+        elif parameter == "HeightOSC/BoopShrink":
+            self.last_boop_time = self.clock
 
     def on_update(self, delta_time: Seconds):
         if (self.clock - self.last_shown_height > self.height_show_time) and not self.force_show:
@@ -238,6 +241,14 @@ class DigiAV3(AV3):
                 elif self.get_parameter_value("HeightOSC/SlowDown"):
                     self.set_height(self.current_height - (speed * dt))
                     self.last_height_tick = self.clock
+
+        # Boop shrink
+        if self.clock < (self.last_boop_time + self.boop_duration) and self.current_height:
+            dt = self.clock - self.last_height_tick
+            speed_val: Speed = self.get_parameter_value("HeightOSC/Speed")
+            if speed_val:
+                speed = SPEEDS[speed_val]
+                self.set_height(self.current_height - (speed * dt))
 
     def on_key_press(self, key: str):
         if not self.vrchat_focused:
@@ -266,7 +277,7 @@ class DigiAV3(AV3):
         if speed and self.current_height:
             if key == "+":
                 self.set_height(self.current_height + speed)
-            elif key == "+":
+            elif key == "-":
                 self.set_height(self.current_height - speed)
 
     def on_key_release(self, key: str):

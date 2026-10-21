@@ -1,5 +1,6 @@
 import logging
 import time
+from typing import Iterable
 
 from pythonosc import udp_client
 from pythonosc.osc_message_builder import OscMessageBuilder
@@ -17,11 +18,14 @@ class OSCClient:
 
         self._client = udp_client.UDPClient(ip, port)
 
-    def _send(self, address: str, data: tuple[Atomic, ...]):
+    def _send(self, address: str, data: tuple[Atomic, ...] | bytes):
         msg = OscMessageBuilder(address = address)
         try:
-            for d in data:
-                msg.add_arg(d)
+            if not isinstance(data, Iterable) or isinstance(data, (str, bytes)):
+                msg.add_arg(data)
+            else:
+                for d in data:
+                    msg.add_arg(d)
             m = msg.build()
         except Exception as e:
             logger.error(e)
@@ -66,4 +70,10 @@ class OSCClient:
         """Set data at address `address` to string `data`."""
         senddata = str(data)
         self._send(address, (senddata,))
+        logger.debug(f"{self.ip}:{self.port} | {address}: {data}")
+
+    def send_blob(self, address: str, data: Iterable[int]):
+        """Set data at address `address` to blob `data`."""
+        senddata = bytes(data)
+        self._send(address, senddata)
         logger.debug(f"{self.ip}:{self.port} | {address}: {data}")
