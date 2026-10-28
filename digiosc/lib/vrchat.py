@@ -3,6 +3,7 @@ from enum import IntEnum, StrEnum
 from typing import Literal, TypedDict, cast, get_type_hints
 
 from digiosc.lib.types import UNFETCHED, float6
+from digiosc.lib.utils import clamp
 
 class Gesture(IntEnum):
     NEUTRAL = 0
@@ -216,105 +217,217 @@ class Button(StrEnum):
 
 @dataclass
 class FullFaceTrackingPayload:
-    EyeLookOutRight: float
-    EyeLookInRight: float
-    EyeLookUpRight: float
-    EyeLookDownRight: float
-    EyeLookOutLeft: float
-    EyeLookInLeft: float
-    EyeLookUpLeft: float
-    EyeLookDownLeft: float
-    EyeClosedRight: float
-    EyeClosedLeft: float
-    EyeDilationRight: float
-    EyeDilationLeft: float
-    EyeConstrictRight: float
-    EyeConstrictLeft: float
-    EyeSquintRight: float
-    EyeSquintLeft: float
-    EyeWideRight: float
-    EyeWideLeft: float
-    BrowPinchRight: float
-    BrowPinchLeft: float
-    BrowLowererRight: float
-    BrowLowererLeft: float
-    BrowInnerUpRight: float
-    BrowInnerUpLeft: float
-    BrowOuterUpRight: float
-    BrowOuterUpLeft: float
-    NasalDilationRight: float
-    NasalDilationLeft: float
-    NasalConstrictRight: float
-    NasalConstrictLeft: float
-    CheekSquintRight: float
-    CheekSquintLeft: float
-    CheekPuffRight: float
-    CheekPuffLeft: float
-    CheekSuckRight: float
-    CheekSuckLeft: float
-    JawOpen: float
-    JawRight: float
-    JawLeft: float
-    JawForward: float
-    JawBackward: float
-    JawClench: float
-    JawMandibleRaise: float
-    MouthClosed: float
-    LipSuckUpperRight: float
-    LipSuckUpperLeft: float
-    LipSuckLowerRight: float
-    LipSuckLowerLeft: float
-    LipSuckCornerRight: float
-    LipSuckCornerLeft: float
-    LipFunnelUpperRight: float
-    LipFunnelUpperLeft: float
-    LipFunnelLowerRight: float
-    LipFunnelLowerLeft: float
-    LipPuckerUpperRight: float
-    LipPuckerUpperLeft: float
-    LipPuckerLowerRight: float
-    LipPuckerLowerLeft: float
-    MouthUpperUpRight: float
-    MouthUpperUpLeft: float
-    MouthUpperDeepenRight: float
-    MouthUpperDeepenLeft: float
-    NoseSneerRight: float
-    NoseSneerLeft: float
-    MouthLowerDownRight: float
-    MouthLowerDownLeft: float
-    MouthUpperRight: float
-    MouthUpperLeft: float
-    MouthLowerRight: float
-    MouthLowerLeft: float
-    MouthCornerPullRight: float
-    MouthCornerPullLeft: float
-    MouthCornerSlantRight: float
-    MouthCornerSlantLeft: float
-    MouthFrownRight: float
-    MouthFrownLeft: float
-    MouthStretchRight: float
-    MouthStretchLeft: float
-    MouthDimpleRight: float
-    MouthDimpleLeft: float
-    MouthRaiserUpper: float
-    MouthRaiserLower: float
-    MouthPressRight: float
-    MouthPressLeft: float
-    MouthTightenerRight: float
-    MouthTightenerLeft: float
-    TongueOut: float
-    TongueUp: float
-    TongueDown: float
-    TongueRight: float
-    TongueLeft: float
-    TongueRoll: float
-    TongueBendDown: float
-    TongueCurlUp: float
-    TongueSquish: float
-    TongueFlat: float
-    TongueTwistRight: float
-    TongueTwistLeft: float
-    SoftPalateClose: float
-    ThroatSwallow: float
-    NeckFlexRight: float
-    NeckFlexLeft: float
+    """Each paramater must be set, and must be a value between 0.0 and 1.0."""
+    EyeLookOutRight: float = 0.0
+    EyeLookInRight: float = 0.0
+    EyeLookUpRight: float = 0.0
+    EyeLookDownRight: float = 0.0
+    EyeLookOutLeft: float = 0.0
+    EyeLookInLeft: float = 0.0
+    EyeLookUpLeft: float = 0.0
+    EyeLookDownLeft: float = 0.0
+    EyeClosedRight: float = 0.0
+    EyeClosedLeft: float = 0.0
+    EyeDilationRight: float = 0.0
+    EyeDilationLeft: float = 0.0
+    EyeConstrictRight: float = 0.0
+    EyeConstrictLeft: float = 0.0
+    EyeSquintRight: float = 0.0
+    EyeSquintLeft: float = 0.0
+    EyeWideRight: float = 0.0
+    EyeWideLeft: float = 0.0
+    BrowPinchRight: float = 0.0
+    BrowPinchLeft: float = 0.0
+    BrowLowererRight: float = 0.0
+    BrowLowererLeft: float = 0.0
+    BrowInnerUpRight: float = 0.0
+    BrowInnerUpLeft: float = 0.0
+    BrowOuterUpRight: float = 0.0
+    BrowOuterUpLeft: float = 0.0
+    NasalDilationRight: float = 0.0
+    NasalDilationLeft: float = 0.0
+    NasalConstrictRight: float = 0.0
+    NasalConstrictLeft: float = 0.0
+    CheekSquintRight: float = 0.0
+    CheekSquintLeft: float = 0.0
+    CheekPuffRight: float = 0.0
+    CheekPuffLeft: float = 0.0
+    CheekSuckRight: float = 0.0
+    CheekSuckLeft: float = 0.0
+    JawOpen: float = 0.0
+    JawRight: float = 0.0
+    JawLeft: float = 0.0
+    JawForward: float = 0.0
+    JawBackward: float = 0.0
+    JawClench: float = 0.0
+    JawMandibleRaise: float = 0.0
+    MouthClosed: float = 0.0
+    LipSuckUpperRight: float = 0.0
+    LipSuckUpperLeft: float = 0.0
+    LipSuckLowerRight: float = 0.0
+    LipSuckLowerLeft: float = 0.0
+    LipSuckCornerRight: float = 0.0
+    LipSuckCornerLeft: float = 0.0
+    LipFunnelUpperRight: float = 0.0
+    LipFunnelUpperLeft: float = 0.0
+    LipFunnelLowerRight: float = 0.0
+    LipFunnelLowerLeft: float = 0.0
+    LipPuckerUpperRight: float = 0.0
+    LipPuckerUpperLeft: float = 0.0
+    LipPuckerLowerRight: float = 0.0
+    LipPuckerLowerLeft: float = 0.0
+    MouthUpperUpRight: float = 0.0
+    MouthUpperUpLeft: float = 0.0
+    MouthUpperDeepenRight: float = 0.0
+    MouthUpperDeepenLeft: float = 0.0
+    NoseSneerRight: float = 0.0
+    NoseSneerLeft: float = 0.0
+    MouthLowerDownRight: float = 0.0
+    MouthLowerDownLeft: float = 0.0
+    MouthUpperRight: float = 0.0
+    MouthUpperLeft: float = 0.0
+    MouthLowerRight: float = 0.0
+    MouthLowerLeft: float = 0.0
+    MouthCornerPullRight: float = 0.0
+    MouthCornerPullLeft: float = 0.0
+    MouthCornerSlantRight: float = 0.0
+    MouthCornerSlantLeft: float = 0.0
+    MouthFrownRight: float = 0.0
+    MouthFrownLeft: float = 0.0
+    MouthStretchRight: float = 0.0
+    MouthStretchLeft: float = 0.0
+    MouthDimpleRight: float = 0.0
+    MouthDimpleLeft: float = 0.0
+    MouthRaiserUpper: float = 0.0
+    MouthRaiserLower: float = 0.0
+    MouthPressRight: float = 0.0
+    MouthPressLeft: float = 0.0
+    MouthTightenerRight: float = 0.0
+    MouthTightenerLeft: float = 0.0
+    TongueOut: float = 0.0
+    TongueUp: float = 0.0
+    TongueDown: float = 0.0
+    TongueRight: float = 0.0
+    TongueLeft: float = 0.0
+    TongueRoll: float = 0.0
+    TongueBendDown: float = 0.0
+    TongueCurlUp: float = 0.0
+    TongueSquish: float = 0.0
+    TongueFlat: float = 0.0
+    TongueTwistRight: float = 0.0
+    TongueTwistLeft: float = 0.0
+    SoftPalateClose: float = 0.0
+    ThroatSwallow: float = 0.0
+    NeckFlexRight: float = 0.0
+    NeckFlexLeft: float = 0.0
+
+    @property
+    def blob(self) -> tuple[int, ...]:
+        return (
+            clamp(0, int(self.EyeLookOutRight * 255), 255),
+            clamp(0, int(self.EyeLookInRight * 255), 255),
+            clamp(0, int(self.EyeLookUpRight * 255), 255),
+            clamp(0, int(self.EyeLookDownRight * 255), 255),
+            clamp(0, int(self.EyeLookOutLeft * 255), 255),
+            clamp(0, int(self.EyeLookInLeft * 255), 255),
+            clamp(0, int(self.EyeLookUpLeft * 255), 255),
+            clamp(0, int(self.EyeLookDownLeft * 255), 255),
+            clamp(0, int(self.EyeClosedRight * 255), 255),
+            clamp(0, int(self.EyeClosedLeft * 255), 255),
+            clamp(0, int(self.EyeDilationRight * 255), 255),
+            clamp(0, int(self.EyeDilationLeft * 255), 255),
+            clamp(0, int(self.EyeConstrictRight * 255), 255),
+            clamp(0, int(self.EyeConstrictLeft * 255), 255),
+            clamp(0, int(self.EyeSquintRight * 255), 255),
+            clamp(0, int(self.EyeSquintLeft * 255), 255),
+            clamp(0, int(self.EyeWideRight * 255), 255),
+            clamp(0, int(self.EyeWideLeft * 255), 255),
+            clamp(0, int(self.BrowPinchRight * 255), 255),
+            clamp(0, int(self.BrowPinchLeft * 255), 255),
+            clamp(0, int(self.BrowLowererRight * 255), 255),
+            clamp(0, int(self.BrowLowererLeft * 255), 255),
+            clamp(0, int(self.BrowInnerUpRight * 255), 255),
+            clamp(0, int(self.BrowInnerUpLeft * 255), 255),
+            clamp(0, int(self.BrowOuterUpRight * 255), 255),
+            clamp(0, int(self.BrowOuterUpLeft * 255), 255),
+            clamp(0, int(self.NasalDilationRight * 255), 255),
+            clamp(0, int(self.NasalDilationLeft * 255), 255),
+            clamp(0, int(self.NasalConstrictRight * 255), 255),
+            clamp(0, int(self.NasalConstrictLeft * 255), 255),
+            clamp(0, int(self.CheekSquintRight * 255), 255),
+            clamp(0, int(self.CheekSquintLeft * 255), 255),
+            clamp(0, int(self.CheekPuffRight * 255), 255),
+            clamp(0, int(self.CheekPuffLeft * 255), 255),
+            clamp(0, int(self.CheekSuckRight * 255), 255),
+            clamp(0, int(self.CheekSuckLeft * 255), 255),
+            clamp(0, int(self.JawOpen * 255), 255),
+            clamp(0, int(self.JawRight * 255), 255),
+            clamp(0, int(self.JawLeft * 255), 255),
+            clamp(0, int(self.JawForward * 255), 255),
+            clamp(0, int(self.JawBackward * 255), 255),
+            clamp(0, int(self.JawClench * 255), 255),
+            clamp(0, int(self.JawMandibleRaise * 255), 255),
+            clamp(0, int(self.MouthClosed * 255), 255),
+            clamp(0, int(self.LipSuckUpperRight * 255), 255),
+            clamp(0, int(self.LipSuckUpperLeft * 255), 255),
+            clamp(0, int(self.LipSuckLowerRight * 255), 255),
+            clamp(0, int(self.LipSuckLowerLeft * 255), 255),
+            clamp(0, int(self.LipSuckCornerRight * 255), 255),
+            clamp(0, int(self.LipSuckCornerLeft * 255), 255),
+            clamp(0, int(self.LipFunnelUpperRight * 255), 255),
+            clamp(0, int(self.LipFunnelUpperLeft * 255), 255),
+            clamp(0, int(self.LipFunnelLowerRight * 255), 255),
+            clamp(0, int(self.LipFunnelLowerLeft * 255), 255),
+            clamp(0, int(self.LipPuckerUpperRight * 255), 255),
+            clamp(0, int(self.LipPuckerUpperLeft * 255), 255),
+            clamp(0, int(self.LipPuckerLowerRight * 255), 255),
+            clamp(0, int(self.LipPuckerLowerLeft * 255), 255),
+            clamp(0, int(self.MouthUpperUpRight * 255), 255),
+            clamp(0, int(self.MouthUpperUpLeft * 255), 255),
+            clamp(0, int(self.MouthUpperDeepenRight * 255), 255),
+            clamp(0, int(self.MouthUpperDeepenLeft * 255), 255),
+            clamp(0, int(self.NoseSneerRight * 255), 255),
+            clamp(0, int(self.NoseSneerLeft * 255), 255),
+            clamp(0, int(self.MouthLowerDownRight * 255), 255),
+            clamp(0, int(self.MouthLowerDownLeft * 255), 255),
+            clamp(0, int(self.MouthUpperRight * 255), 255),
+            clamp(0, int(self.MouthUpperLeft * 255), 255),
+            clamp(0, int(self.MouthLowerRight * 255), 255),
+            clamp(0, int(self.MouthLowerLeft * 255), 255),
+            clamp(0, int(self.MouthCornerPullRight * 255), 255),
+            clamp(0, int(self.MouthCornerPullLeft * 255), 255),
+            clamp(0, int(self.MouthCornerSlantRight * 255), 255),
+            clamp(0, int(self.MouthCornerSlantLeft * 255), 255),
+            clamp(0, int(self.MouthFrownRight * 255), 255),
+            clamp(0, int(self.MouthFrownLeft * 255), 255),
+            clamp(0, int(self.MouthStretchRight * 255), 255),
+            clamp(0, int(self.MouthStretchLeft * 255), 255),
+            clamp(0, int(self.MouthDimpleRight * 255), 255),
+            clamp(0, int(self.MouthDimpleLeft * 255), 255),
+            clamp(0, int(self.MouthRaiserUpper * 255), 255),
+            clamp(0, int(self.MouthRaiserLower * 255), 255),
+            clamp(0, int(self.MouthPressRight * 255), 255),
+            clamp(0, int(self.MouthPressLeft * 255), 255),
+            clamp(0, int(self.MouthTightenerRight * 255), 255),
+            clamp(0, int(self.MouthTightenerLeft * 255), 255),
+            clamp(0, int(self.TongueOut * 255), 255),
+            clamp(0, int(self.TongueUp * 255), 255),
+            clamp(0, int(self.TongueDown * 255), 255),
+            clamp(0, int(self.TongueRight * 255), 255),
+            clamp(0, int(self.TongueLeft * 255), 255),
+            clamp(0, int(self.TongueRoll * 255), 255),
+            clamp(0, int(self.TongueBendDown * 255), 255),
+            clamp(0, int(self.TongueCurlUp * 255), 255),
+            clamp(0, int(self.TongueSquish * 255), 255),
+            clamp(0, int(self.TongueFlat * 255), 255),
+            clamp(0, int(self.TongueTwistRight * 255), 255),
+            clamp(0, int(self.TongueTwistLeft * 255), 255),
+            clamp(0, int(self.SoftPalateClose * 255), 255),
+            clamp(0, int(self.ThroatSwallow * 255), 255),
+            clamp(0, int(self.NeckFlexRight * 255), 255),
+            clamp(0, int(self.NeckFlexLeft * 255), 255)
+        )
+
+    @property
+    def bytestring(self) -> bytes:
+        return bytes(self.blob)

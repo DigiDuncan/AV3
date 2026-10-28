@@ -1,3 +1,4 @@
+import base64
 import logging
 import time
 from typing import Iterable, cast
@@ -9,7 +10,7 @@ from pythonosc.osc_server import BlockingOSCUDPServer
 
 from digiosc.lib.logging import setup_logging
 from digiosc.lib.types import IP, UNFETCHED, Atomic, LeftOrRight, OSCReturnable, ParameterReturnValue, Port, Position, Rotation, Seconds, UnfetchedType, Velocity, float6
-from digiosc.lib.vrchat import AvatarParameters, Axis, Button, Gesture, Tracker, TrackingType, Viseme, create_default_parameters_dict, get_default_parameter_names
+from digiosc.lib.vrchat import AvatarParameters, Axis, Button, FullFaceTrackingPayload, Gesture, Tracker, TrackingType, Viseme, create_default_parameters_dict, get_default_parameter_names
 from digiosc.osc import OSCClient
 
 
@@ -266,6 +267,11 @@ class AV3Base():
         self._client._send("/tracking/trackers/head/rotation", rotation)
         if self.verbose:
             self.logger.info(f"{self.ip}:{self.port} <- HEAD ROT: {rotation}")
+
+    def set_face_tracking_data(self, face_tracking: FullFaceTrackingPayload):
+        self._client.send_blob("/tracking/face/v1", face_tracking.blob)
+        if self.verbose:
+            self.logger.info(f"{self.ip}:{self.port} <- FACE TRACKING: {base64.b64encode(face_tracking.bytestring).decode("utf-8")}")
 
     # INTERNAL FUNCTIONS
 
